@@ -22,6 +22,16 @@ ADDRESS_TH = "869/51 ซอยไทยวิวัฒน์ ต.เวียง
 QUOTE_GT = ("One of the most beautiful places in Thailand. It was the highlight of our "
             "visit, and we went back several times.")
 QUOTE_TOWN = "Sleepy little town full of lovely people."
+QUOTE_OPIUM = ("I highly highly highly recommend visiting both opium museums AND their delightful "
+               "giftshops.")
+
+STAY = dict(name="Baan Kan", th="บ้านกาญจน์ เชียงราย", img="own:baan-kan-garden",
+            address="254/13 Moo 21, Kaoloi Road, Chiang Rai", phone="+66 80 745 7583",
+            book="https://book-directonline.com/properties/baankanchiangraidirect",
+            mail="baankan.cei@gmail.com", fb="https://www.facebook.com/102533999501798",
+            lat=19.914586, lng=99.835274,
+            line="Where NaN stays: a garden guesthouse on Kaoloi Road, a short ride from the clock tower. Tell them NaN sent you.",
+            th_line="นอนบ้านกาญจน์ บอกเขาว่า NaN แนะนำมาเน้อเจ้า")
 
 
 def wa(text: str) -> str:
@@ -124,8 +134,17 @@ GT = [
       text="A seated golden Buddha on a ship-shaped platform at the water's edge, the landmark of "
            "the bend. Go late in the afternoon, when the gold and the river match."),
  dict(name="The Hall of Opium", th="หอฝิ่น", img="own:opium-mural", osm="Hall of Opium",
-      text="A museum of the valley's history, run by the Mae Fah Luang Foundation. The painted "
-           "panels of the farming year, month by month, are worth the visit on their own."),
+      text="The great museum of the valley's history, run by the Mae Fah Luang Foundation, in the "
+           "park above Sop Ruak. The painted panels of the farming year are worth the visit on their "
+           "own. Leave time for the gift shop."),
+ dict(name="The House of Opium", th="บ้านฝิ่น", img="c:mekong-1", osm="House of Opium Sop Ruak",
+      text="The small one, in Sop Ruak village: a private museum opened in 1989 by Patcharee "
+           "Srimattayakul, born in Chiang Saen. Scales, weights, pipes and the stories behind them, "
+           "and a gift shop of its own. Open early to late."),
+ dict(name="Coffee and crafts, from the makers", th="กาแฟดอย · งานฝีมือชาวเขา", img="own:across-mekong",
+      text="Along the river road and up at the viewpoints, hill-village families sell their own coffee "
+           "and their own weaving and embroidery, with the confluence below you. Buy from the "
+           "person who made it."),
  dict(name="The glass walkway", th="สกายวอล์ค", img="own:skywalk",
       text="South of Chiang Saen a glass floor reaches out over the treetops toward the Mekong, "
            "with blossom trees and an arch of flowers at the end. Bring a hat; the late sun is gold."),
