@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import content as C  # noqa: E402
+import content_th as TH  # noqa: E402
 import fleet  # noqa: E402
 
 DOCS = Path(os.environ["OUT"]) if os.environ.get("OUT") else ROOT / "docs"
@@ -21,18 +22,51 @@ OWN = json.loads((ROOT / "data/own/own.json").read_text())
 CRED = json.loads((ROOT / "data/commons/credits.json").read_text())
 BANDS_CSS = (ROOT / "tools/bands.css").read_text()
 e = lambda s: html.escape("" if s is None else str(s), quote=True)  # noqa: E731
+LANG = "en"
+A = "{A}"  # the site root, for img/ and v/; {PRE} is the root of the page's own language
+
+
+def t(en, th):
+    return th if LANG == "th" else en
+
+
+def bi(en, th, tp=None):
+    """A label and its other-language partner: English first on English pages, Thai first on Thai."""
+    if LANG == "th":
+        return f'{tp or th} · <span lang="en">{en}</span>'
+    return f'{en} · <span lang="th" class="th">{th}</span>'
+
+
+def sub_lang():
+    return "en" if LANG == "th" else "th"
+
+
+def loc(s, table=None, key="name"):
+    """An item from content.py in the page's language. The `th` field carries the other language's name."""
+    s = dict(s)
+    s.setdefault("id", slug(s["name"]))
+    if LANG != "th":
+        return s
+    th = table.get(s[key]) if table is not None else None
+    if isinstance(th, dict):
+        s.update({k: v for k, v in th.items() if k in ("kicker", "text", "days")})
+    elif isinstance(th, str):
+        s["text"] = th
+    s["name"], s["th"] = s["th"], s["name"]
+    s["th_text"] = None
+    return s
 
 
 def img(ref: str, thumb=False) -> str:
     kind, slug = ref.split(":", 1)
-    base = "img/own/" if kind == "own" else "img/c/"
+    base = A + ("img/own/" if kind == "own" else "img/c/")
     return base + slug + ("-t.jpg" if thumb else ".jpg")
 
 
 def credit(ref: str) -> str:
     kind, slug = ref.split(":", 1)
     if kind == "own":
-        return 'Photo: NaN · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>'
+        return t('Photo', 'ภาพ') + ': NaN · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>'
     c = CRED[slug]
     return (f'{e(c["author"][:48])} · <a href="{e(c["page"])}">Commons</a> · '
             f'<a href="{e(c["licence_url"])}">{e(c["licence"])}</a>')
@@ -45,23 +79,30 @@ def osm(q: str) -> str:
 def band(ref, kicker="", head="", line="", href="", cta="", cls="", th="", pre="{PRE}"):
     inner = [f'<span class="kicker">{e(kicker)}</span>' if kicker else "",
              f"<h2>{e(head)}</h2>" if head else "",
-             f'<p class="th" lang="th">{e(th)}</p>' if th else "",
+             f'<p class="th" lang="th">{e(th)}</p>' if th and LANG == "en" else "",
              f"<p>{e(line)}</p>" if line else "",
              f'<a class="btn" href="{"" if href.startswith("http") else pre}{e(href)}">{e(cta)}</a>' if href and cta else ""]
-    return (f'<section class="band {cls}" style="background-image:url({pre}{img(ref)})">'
+    return (f'<section class="band {cls}" style="background-image:url({img(ref)})">'
             f'<div class="in">{"".join(inner)}</div><span class="cred">{credit(ref)}</span></section>')
 
 
 def shot(ref, name, href, sub="", ratio=125, pre="", ext=False):
     """The linked-image formula: background · scrim · spacer · text, the whole box a link."""
     tgt = ' rel="noopener"' if ext else ""
-    return (f'<a class="shot" href="{e(href)}"{tgt}><span class="bg" style="background-image:url({pre}{img(ref, True)})"></span>'
+    return (f'<a class="shot" href="{e(href)}"{tgt}><span class="bg" style="background-image:url({img(ref, True)})"></span>'
             f'<span class="scrim"></span><span class="sp" style="padding-top:{ratio}%"></span>'
             f'<span class="tx"><b>{e(name)}</b>{f"<i>{e(sub)}</i>" if sub else ""}</span></a>')
 
 
 def note(key, pre=""):
     n = C.NOTES[key]
+    if LANG == "th":
+        n = dict(n, **TH.NOTES[key])
+        n["kicker"] = n["kicker"] + " · " + C.NOTES[key]["th"]
+        ext = n["href"].startswith("http")
+        rel = ' rel="noopener"' if ext else ""
+        return (f'<aside class="note"><span class="nk">{e(n["kicker"])}</span><p>{e(n["line"])}</p>'
+                f'<a href="{e(n["href"] if ext else pre + n["href"])}"{rel}>{e(n["cta"])} →</a></aside>')
     href = n["href"] if n.get("ext") or n["href"].startswith("http") else pre + n["href"]
     rel = ' rel="noopener"' if n.get("ext") or href.startswith("http") else ""
     return (f'<aside class="note"><span class="nk">{e(n["kicker"])} <span lang="th" class="th">· {e(n["th"])}</span></span>'
@@ -248,47 +289,79 @@ footer .support,footer .fleet{margin-top:.6rem}
 .band .kicker{font-family:var(--sans);font-weight:600}
 .band p.th{color:#efe6d6;font-size:1rem}
 @media print{aside.note,header.mast nav{display:none}}
+.skip{position:absolute;left:-9999px;top:0;z-index:9;background:var(--ink);color:var(--bg);padding:.5rem .9rem;font-family:var(--sans)}
+.skip:focus{left:8px;top:8px}
+:lang(th){letter-spacing:0!important;text-transform:none!important}
+html:lang(th) :is(h1,h2,h3,.brand,a.shot .tx b,blockquote.pull p,.band h2){line-height:1.32}
+html:lang(th) .skyband h2{line-height:1.15}
+html:lang(th) :is(h1,h2,.dek){text-wrap:balance}
+html:lang(th) table.list td.p{width:13rem}
+html:lang(th) .count b{line-height:.85}
+html:lang(th) p.lede::first-letter{float:none;font:inherit;padding:0;color:inherit}
 """
 
+NAV_TH = ["เชียงราย", "สามเหลี่ยมทองคำ", "ที่เที่ยว", "แอ่วนอกเส้นทาง", "เรือช้า", "ไลลากรุ๊ป", "โคมลอย", "ภาพของ NaN"]
 NAV = [("", "Chiang Rai"), ("golden-triangle/", "Golden Triangle"), ("see/", "The sights"),
        ("sidequests/", "Sidequests"), ("slow-boat/", "Slow boat"), ("with-laila/", "Laila Group"),
        ("lanterns/", "Lanterns"), ("roll/", "NaN's roll")]
 
 
 def page(path: str, title: str, desc: str, body: str, card="card.jpg", ld=None):
-    depth = path.count("/")
-    pre = "../" * depth
-    nav = "".join(f'<a href="{pre}{h}"{" aria-current=page" if h == path else ""}>{e(t)}</a>' for h, t in NAV)
-    url = CANON + "/" + path
-    alt = PAGES + "/" + path
+    th = LANG == "th"
+    pre = "../" * path.count("/")
+    ap = pre + ("../" if th else "")
+    labels = NAV_TH if th else [x for _, x in NAV]
+    nav = "".join(f'<a href="{pre}{h}"{" aria-current=page" if h == path else ""}>{e(t)}</a>' for (h, _), t in zip(NAV, labels))
+    nav += (f'<a href="{ap}{path}" lang="en" hreflang="en">English</a>' if th
+            else f'<a href="{pre}th/{path}" lang="th" hreflang="th">ไทย</a>')
+    tp = "th/" if th else ""
+    url = CANON + "/" + tp + path
+    alt = PAGES + "/" + tp + path
     lds = "".join(f'<script type="application/ld+json">{json.dumps(x, ensure_ascii=False)}</script>' for x in (ld or []))
-    full = title if title == TITLE else f"{title} · {TITLE}"
-    body = body.replace("{PRE}", pre)
-    doc = f"""<!doctype html><html lang="en" translate="no" class="notranslate"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="google" content="notranslate">
-<title>{e(full)}</title><meta name="description" content="{e(desc)}">
-<link rel="canonical" href="{url}"><link rel="alternate" href="{alt}"><meta name="theme-color" content="#0e6b62">
-<meta property="og:type" content="website"><meta property="og:title" content="{e(full)}">
-<meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{url}">
-<meta property="og:image" content="{SITE_URL}/{card}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{SITE_URL}/{card}">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 29 27H3z' fill='%23a8791f'/%3E%3C/svg%3E">
-<style>{CSS}</style>{lds}</head><body>
-<div class="presented">Presented with <a href="{pre}with-laila/">Laila Group</a>, Chiang Rai · <span lang="th" class="th">ไลลากรุ๊ป เชียงราย</span></div>
-<header class="mast"><div class="in"><a class="brand" href="{pre}">Chiang Rai, <i>Slowly</i></a><nav aria-label="Sections">{nav}</nav></div></header>
-<main>{body}</main>
-<footer><div class="in">
-<p><b>Chiang Rai, Slowly</b> · <span lang="th" class="th">{TITLE_TH}</span> · presented with Laila Group, {e(C.ADDRESS)} ·
+    site_title = TITLE_TH if th else TITLE
+    full = title if title == site_title else f"{title} · {site_title}"
+    body = body.replace("{PRE}", pre).replace(A, ap)
+    brand = f"แอ่วเชียงราย <i>ค่อย ๆ ไปเน้อ</i>" if th else "Chiang Rai, <i>Slowly</i>"
+    presented = (f'ร่วมนำเสนอโดย <a href="{pre}with-laila/">ไลลากรุ๊ป</a> เชียงราย · <span lang="en">Laila Group, Chiang Rai</span>' if th
+                 else f'Presented with <a href="{pre}with-laila/">Laila Group</a>, Chiang Rai · <span lang="th" class="th">ไลลากรุ๊ป เชียงราย</span>')
+    if th:
+        foot = f"""<p><b>{TITLE_TH}</b> · <span lang="en">Chiang Rai, Slowly</span> · ร่วมนำเสนอโดยไลลากรุ๊ป {e(C.ADDRESS_TH)} ·
+<a href="{e(C.wa(TH.HELLO))}" rel="noopener">WhatsApp {e(C.PHONE)}</a> · <a href="mailto:{C.MAIL}">{e(C.MAIL)}</a></p>
+<p>ราคาเป็นของไลลากรุ๊ปเอง ตามที่ลงไว้บน <a href="{C.SHOP}/" rel="noopener">slowboatthailandlaos.com</a> เมื่อ {TH.READ}
+ภาพถ่ายของ NaN ใช้สัญญาอนุญาต CC BY 4.0 ภาพอื่นมีชื่อผู้ถ่ายและสัญญาอนุญาตกำกับไว้ข้างภาพ ข้อความ CC BY 4.0 โค้ด MIT
+<a href="{pre}credits/">เครดิต</a></p>
+{fleet.maker_html(lang="th")}
+{fleet.row_html("chiang-rai", label="เว็บอื่นจาก NaNoBotCo")}"""
+    else:
+        foot = f"""<p><b>Chiang Rai, Slowly</b> · <span lang="th" class="th">{TITLE_TH}</span> · presented with Laila Group, {e(C.ADDRESS)} ·
 <a href="{C.WA}" rel="noopener">WhatsApp {e(C.PHONE)}</a> · <a href="mailto:{C.MAIL}">{e(C.MAIL)}</a></p>
 <p>Prices are Laila Group's own, as listed on <a href="{C.SHOP}/" rel="noopener">slowboatthailandlaos.com</a> on {C.READ}.
 Photographs by NaN are CC BY 4.0; every other photograph carries its author and licence beside it. Text CC BY 4.0, code MIT.
 <a href="{pre}credits/">Credits</a>.</p>
 {fleet.maker_html()}
-{fleet.row_html("chiang-rai")}
+{fleet.row_html("chiang-rai")}"""
+    doc = f"""<!doctype html><html lang="{LANG}" translate="no" class="notranslate"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="google" content="notranslate">
+<title>{e(full)}</title><meta name="description" content="{e(desc)}">
+<link rel="canonical" href="{url}"><link rel="alternate" href="{alt}"><meta name="theme-color" content="#0e6b62">
+<link rel="alternate" hreflang="en" href="{CANON}/{path}"><link rel="alternate" hreflang="th" href="{CANON}/th/{path}"><link rel="alternate" hreflang="x-default" href="{CANON}/{path}">
+<meta property="og:type" content="website"><meta property="og:title" content="{e(full)}"><meta property="og:locale" content="{"th_TH" if th else "en_US"}">
+<meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{url}">
+<meta property="og:image" content="{SITE_URL}/{card}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{SITE_URL}/{card}">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 29 27H3z' fill='%23a8791f'/%3E%3C/svg%3E">
+<style>{CSS}</style>{lds}</head><body>
+<a class="skip" href="#main">{t("Skip to the story", "ข้ามไปที่เนื้อหา")}</a>
+<div class="presented">{presented}</div>
+<header class="mast"><div class="in"><a class="brand" href="{pre}">{brand}</a><nav aria-label="{t("Sections", "หมวด")}">{nav}</nav></div></header>
+<main id="main">{body}</main>
+<footer><div class="in">
+{foot}
 </div></footer>
-<script>{LANTERN_JS}</script><script>try{{document.querySelectorAll('video[data-tap]').forEach(v=>v.addEventListener('click',()=>v.paused?v.play():v.pause()))}}catch(e){{}}</script>
+<script>{lantern_js()}</script><script>try{{document.querySelectorAll('video[data-tap]').forEach(v=>v.addEventListener('click',()=>v.paused?v.play():v.pause()))}}catch(e){{}}</script>
 </body></html>"""
-    out = DOCS / path / "index.html"
+    doc = doc.replace(" ๆ", " \u2060ๆ")  # a word joiner keeps ไม้ยมก with the word it repeats
+    out = DOCS / tp / path / "index.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(doc, encoding="utf-8")
 
@@ -302,7 +375,7 @@ ORG = {"@context": "https://schema.org", "@type": "TravelAgency", "name": "Laila
 
 
 
-LANTERN_JS = r"""
+LANTERN_JS_SRC = r"""
 (function(){
  var night=new Date('%NIGHT%T19:00:00+07:00');
  // mean full moon: 2000-01-21 04:40 UTC, synodic month 29.530588853 days
@@ -317,7 +390,7 @@ LANTERN_JS = r"""
  document.querySelectorAll('[data-count]').forEach(function(el){
   var d=Math.ceil((night-Date.now())/864e5);
   if(d<-2){el.hidden=true;return}
-  el.querySelector('b').textContent=d>0?d:'Tonight';
+  el.querySelector('b').textContent=d>0?d:'%TONIGHT%';
   if(d<=0) el.querySelector('small').textContent='';
  });
  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -354,59 +427,83 @@ LANTERN_JS = r"""
 """.replace("%NIGHT%", C.LANTERN_NIGHT)
 
 
+def lantern_js():
+    return LANTERN_JS_SRC.replace("%TONIGHT%", t("Tonight", "คืนนี้"))
+
+
 def stay_block(pre="{PRE}"):
     b = C.STAY
+    name, other = (b["th"], b["name"]) if LANG == "th" else (b["name"], b["th"])
+    line = TH.STAY_LINE if LANG == "th" else b["line"]
+    tl = f'<p class="th" lang="th">{e(b["th_line"])}</p>' if LANG == "en" else ""
     return (f'<section class="sight" id="stay"><figure class="card">'
-            f'{shot(b["img"], b["th"], b["book"], "", 125, pre, True)}<span class="cred">{credit(b["img"])}</span></figure>'
-            f'<div><span class="kick">Where to stay · ที่พัก</span><h3>{e(b["name"])}<span class="thn" lang="th">{e(b["th"])}</span></h3>'
-            f'<p>{e(b["line"])}</p><p class="th" lang="th">{e(b["th_line"])}</p>'
-            f'<p class="go"><a href="{e(b["book"])}" rel="noopener">Book direct</a>'
-            f'<a href="https://www.openstreetmap.org/?mlat={b["lat"]}&amp;mlon={b["lng"]}#map=18/{b["lat"]}/{b["lng"]}" rel="noopener">Map</a>'
+            f'{shot(b["img"], other, b["book"], "", 125, pre, True)}<span class="cred">{credit(b["img"])}</span></figure>'
+            f'<div><span class="kick">{bi("Where to stay", "ที่พัก")}</span><h3>{e(name)}<span class="thn" lang="{sub_lang()}">{e(other)}</span></h3>'
+            f'<p>{e(line)}</p>{tl}'
+            f'<p class="go"><a href="{e(b["book"])}" rel="noopener">{t("Book direct", "จองตรง")}</a>'
+            f'<a href="https://www.openstreetmap.org/?mlat={b["lat"]}&amp;mlon={b["lng"]}#map=18/{b["lat"]}/{b["lng"]}" rel="noopener">{t("Map", "แผนที่")}</a>'
             f'<a href="tel:{b["phone"].replace(" ", "")}">{e(b["phone"])}</a></p></div></section>')
+
+
+def hello():
+    return C.wa(TH.HELLO) if LANG == "th" else C.wa("Hello Laila Group! I found you on Chiang Rai, Slowly.")
+
+
+def quote(key):
+    return getattr(TH, key) if LANG == "th" else getattr(C, key)
 
 # ---------------------------------------------------------------- pages
 def home():
+    S = [loc(s, TH.SIGHTS, "id") for s in C.SIGHTS[:8]]
+    Q = [loc(s, TH.SIDE) for s in C.SIDE[:6]]
     sights = "".join(
         f'<figure class="card">{shot(s["img"], s["name"], s.get("href") or "see/#" + s["id"], s["th"])}'
-        f'<figcaption>{e(s["kicker"])}</figcaption></figure>' for s in C.SIGHTS[:8])
+        f'<figcaption>{e(s["kicker"])}</figcaption></figure>' for s in S)
     side = "".join(
-        f'<figure class="card">{shot(s["img"], s["name"], "sidequests/#" + slug(s["name"]), s["th"], 100)}</figure>'
-        for s in C.SIDE[:6])
+        f'<figure class="card">{shot(s["img"], s["name"], "sidequests/#" + s["id"], s["th"], 100)}</figure>'
+        for s in Q)
+    en = LANG == "en"
     body = f"""
-<div class="col open"><div class="rubric">A Journey · <span lang="th" class="th">แอ่ว</span></div>
-<h1>Chiang Rai, Slowly</h1>
-<p class="dek">Three temples in three colours, a golden clock, the bend in the Mekong where three countries meet, and a slow boat to Laos.</p>
-<p class="dek-th th" lang="th">{TITLE_TH} — วัดขาว วัดฟ้า บ้านดำ หอนาฬิกาทอง สามเหลี่ยมทองคำ แล้วก็ล่องเรือช้าไปลาวเจ้า</p>
-<p class="by">By <a href="https://hongdam.net/" rel="noopener">NaN</a> · Photographs from her camera roll</p></div>
-{band("c:golden-triangle-3", "Sop Ruak", "The most beautiful afternoon in the north", th="สามเหลี่ยมทองคำ ยามแลง งามขนาดเจ้า", href="golden-triangle/", cta="The Golden Triangle", cls="tall")}
+<div class="col open"><div class="rubric">{bi("A Journey", "แอ่ว")}</div>
+<h1>{t("Chiang Rai, Slowly", TITLE_TH)}</h1>
+<p class="dek">{t("Three temples in three colours, a golden clock, the bend in the Mekong where three countries meet, and a slow boat to Laos.",
+                  "วัดสามวัดสามสี หอนาฬิกาสีทอง โค้งแม่น้ำโขงที่สามประเทศมาพบกัน และเรือช้าไปลาว")}</p>
+{f'<p class="dek-th th" lang="th">{TITLE_TH} — วัดขาว วัดฟ้า บ้านดำ หอนาฬิกาทอง สามเหลี่ยมทองคำ แล้วก็ล่องเรือช้าไปลาวเจ้า</p>' if en else ""}
+<p class="by">{t('By <a href="https://hongdam.net/" rel="noopener">NaN</a> · Photographs from her camera roll',
+                 'โดย <a href="https://hongdam.net/" rel="noopener">NaN</a> · ภาพถ่ายจากมือถือของเธอ')}</p></div>
+{band("c:golden-triangle-3", t("Sop Ruak", "สบรวก"), t("The most beautiful afternoon in the north", "ยามบ่ายที่งามที่สุดของภาคเหนือ"), th="สามเหลี่ยมทองคำ ยามแลง งามขนาดเจ้า", href="golden-triangle/", cta=t("The Golden Triangle", "สามเหลี่ยมทองคำ"), cls="tall")}
 <div class="col">
 {note("day")}
-<p class="lede">Chiang Rai is the northernmost city in Thailand and among its gentlest: a {e("sleepy little town full of lovely people")}, as NaN puts it, with a golden clock tower at the centre and the hills rising on every side. It is small enough to cross by scooter in ten minutes and generous enough to fill a week.</p>
-<p>Within half an hour of the clock tower stand three of the most extraordinary buildings in Asia, each the life's work of a Chiang Rai artist: a temple in white, a temple in blue, and a house in black. An hour north, the Kok and the Ruak and the Mekong carry you to the Golden Triangle, where Thailand, Laos and Myanmar meet on one bend of the river. That was the highlight of our visit, and we went back several times.</p>
-<p class="th" lang="th">เชียงรายเป็นเมืองเล็ก ๆ ผู้คนใจดี แอ่วได้สบาย ๆ ทั้งวัน ม่วนใจ๋แต๊เจ้า</p>
+{t(f'<p class="lede">Chiang Rai is the northernmost city in Thailand and among its gentlest: a {e("sleepy little town full of lovely people")}, as NaN puts it, with a golden clock tower at the centre and the hills rising on every side. It is small enough to cross by scooter in ten minutes and generous enough to fill a week.</p>',
+   f'<p class="lede">เชียงรายเป็นเมืองเหนือสุดของประเทศไทย และเป็นเมืองที่อ่อนโยนที่สุดเมืองหนึ่ง “{TH.QUOTE_TOWN}” อย่างที่ NaN ว่าไว้ มีหอนาฬิกาสีทองอยู่ใจกลางเมือง และภูเขาล้อมรอบทุกด้าน เมืองเล็กพอจะขี่สกู๊ตเตอร์ข้ามได้ในสิบนาที แต่มีเรื่องให้แอ่วได้เต็มหนึ่งสัปดาห์</p>')}
+<p>{t("Within half an hour of the clock tower stand three of the most extraordinary buildings in Asia, each the life's work of a Chiang Rai artist: a temple in white, a temple in blue, and a house in black. An hour north, the Kok and the Ruak and the Mekong carry you to the Golden Triangle, where Thailand, Laos and Myanmar meet on one bend of the river. That was the highlight of our visit, and we went back several times.",
+      "ห่างจากหอนาฬิกาไม่เกินครึ่งชั่วโมง มีสิ่งก่อสร้างที่น่าทึ่งที่สุดในเอเชียถึงสามแห่ง แต่ละแห่งคืองานทั้งชีวิตของศิลปินเชียงราย วัดสีขาว วัดสีน้ำเงิน และบ้านสีดำ ขึ้นเหนือไปอีกหนึ่งชั่วโมง แม่น้ำกก แม่น้ำรวก และแม่น้ำโขงจะพาคุณไปถึงสามเหลี่ยมทองคำ ที่ไทย ลาว และเมียนมามาพบกันบนโค้งน้ำเดียว ที่นั่นคือไฮไลต์ของทริปเรา และเรากลับไปอีกหลายครั้ง")}</p>
+{'<p class="th" lang="th">เชียงรายเป็นเมืองเล็ก ๆ ผู้คนใจดี แอ่วได้สบาย ๆ ทั้งวัน ม่วนใจ๋แต๊เจ้า</p>' if en else ""}
 </div>
-<div class="wide"><h2 class="sec"><small>The sights · <span lang="th" class="th">ที่เที่ยว</span></small>Headliners</h2>
-<div class="shots">{sights}</div><p><a href="see/">All the sights →</a></p></div>
+<div class="wide"><h2 class="sec"><small>{bi("The sights", "ที่เที่ยว")}</small>{t("Headliners", "ไฮไลต์ของเชียงราย")}</h2>
+<div class="shots">{sights}</div><p><a href="see/">{t("All the sights", "ที่เที่ยวทั้งหมด")} →</a></p></div>
 <div class="col">{note("boat", "")}
-<blockquote class="pull"><p>“{e(C.QUOTE_GT)}”</p><cite>NaN, on the Golden Triangle</cite></blockquote>
-<figure class="polaroid"><img src="img/own/nan-golden-triangle-t.jpg" alt="NaN smiling at the Golden Triangle viewpoint" loading="lazy" width="405" height="720"><figcaption>NaN, at the Golden Triangle</figcaption></figure>
+<blockquote class="pull"><p>“{e(quote("QUOTE_GT"))}”</p><cite>{t("NaN, on the Golden Triangle", "NaN พูดถึงสามเหลี่ยมทองคำ")}</cite></blockquote>
+<figure class="polaroid"><img src="{A}img/own/nan-golden-triangle-t.jpg" alt="{t("NaN smiling at the Golden Triangle viewpoint", "NaN ยิ้มที่จุดชมวิวสามเหลี่ยมทองคำ")}" loading="lazy" width="405" height="720"><figcaption>{t("NaN, at the Golden Triangle", "NaN ที่สามเหลี่ยมทองคำ")}</figcaption></figure>
 </div>
-{band("c:luang-prabang-1", "Laila Group · the slow boat", "Two days down the Mekong to Luang Prabang", line="Picked up at your door before dawn, across the border by eight, on the river by ten. From ฿1,690.", th="ล่องเรือช้าไปหลวงพระบาง สองวันหนึ่งคืนเจ้า", href="slow-boat/", cta="The slow boat", cls="right")}
-{skyband("c:lantern-dark", "Yi Peng · 24 November 2026", "Lantern Night", "ยี่เป็ง เชียงราย", count=True, href="lanterns/", cta="Lantern Night")}
-<div class="wide"><h2 class="sec"><small>Sidequests · <span lang="th" class="th">แอ่วนอกเส้นทาง</span></small>The small wonders</h2>
-<div class="shots">{side}</div><p><a href="sidequests/">Every sidequest →</a></p></div>
+{band("c:luang-prabang-1", t("Laila Group · the slow boat", "ไลลากรุ๊ป · เรือช้า"), t("Two days down the Mekong to Luang Prabang", "ล่องแม่น้ำโขงสองวันไปหลวงพระบาง"), line=t("Picked up at your door before dawn, across the border by eight, on the river by ten. From ฿1,690.", "รับถึงหน้าที่พักก่อนรุ่งสาง ข้ามด่านราวแปดโมง ลงเรือสิบโมง เริ่มต้น ฿1,690"), th="ล่องเรือช้าไปหลวงพระบาง สองวันหนึ่งคืนเจ้า", href="slow-boat/", cta=t("The slow boat", "เรือช้า"), cls="right")}
+{skyband("c:lantern-dark", t("Yi Peng · 24 November 2026", "ยี่เป็ง · 24 พฤศจิกายน 2569"), "Lantern Night", "ยี่เป็ง เชียงราย", count=True, href="lanterns/", cta=t("Lantern Night", "คืนโคมลอย"))}
+<div class="wide"><h2 class="sec"><small>{bi("Sidequests", "แอ่วนอกเส้นทาง")}</small>{t("The small wonders", "สิ่งเล็ก ๆ ที่น่าทึ่ง")}</h2>
+<div class="shots">{side}</div><p><a href="sidequests/">{t("Every sidequest", "แอ่วนอกเส้นทางทั้งหมด")} →</a></p></div>
 <div class="col">{note("desk")}
-<h2 class="sec"><small>Laila Group · <span lang="th" class="th">ไลลากรุ๊ป</span></small>Everything, from one alley</h2>
-<p>Laila Group keeps its office on Thai Viwat Alley, a few minutes' walk from the clock tower. From there it runs the slow boats and trains to Laos, day trips to every mountain on this page, cars with drivers and scooters by the day, a visa office, and a designer consignment shop next door.</p>
-<p class="th" lang="th">ไลลากรุ๊ป อยู่ซอยไทยวิวัฒน์ กลางเมืองเชียงราย มีทั้งทัวร์ เรือช้าไปลาว รถเช่า มอเตอร์ไซค์ งานวีซ่า แล้วก็ร้านแบรนด์เนมฝากขาย ทักมาได้เน้อเจ้า</p>
-<div class="ctas"><a class="btn" href="with-laila/">Laila Group</a><a class="btn ghost" href="{e(C.wa("Hello Laila Group! I found you on Chiang Rai, Slowly."))}" rel="noopener">WhatsApp</a></div>
+<h2 class="sec"><small>{bi("Laila Group", "ไลลากรุ๊ป")}</small>{t("Everything, from one alley", "ครบทุกอย่าง จากซอยเดียว")}</h2>
+<p>{t("Laila Group keeps its office on Thai Viwat Alley, a few minutes' walk from the clock tower. From there it runs the slow boats and trains to Laos, day trips to every mountain on this page, cars with drivers and scooters by the day, a visa office, and a designer consignment shop next door.",
+      "ไลลากรุ๊ปมีสำนักงานอยู่ในซอยไทยวิวัฒน์ เดินจากหอนาฬิกาไม่กี่นาที จากที่นั่นดูแลทั้งเรือช้าและรถไฟไปลาว ทริปหนึ่งวันไปทุกดอยในหน้านี้ รถพร้อมคนขับและสกู๊ตเตอร์รายวัน สำนักงานวีซ่า และร้านแบรนด์เนมฝากขายที่อยู่ติดกัน")}</p>
+{'<p class="th" lang="th">ไลลากรุ๊ป อยู่ซอยไทยวิวัฒน์ กลางเมืองเชียงราย มีทั้งทัวร์ เรือช้าไปลาว รถเช่า มอเตอร์ไซค์ งานวีซ่า แล้วก็ร้านแบรนด์เนมฝากขาย ทักมาได้เน้อเจ้า</p>' if en else ""}
+<div class="ctas"><a class="btn" href="with-laila/">{t("Laila Group", "ไลลากรุ๊ป")}</a><a class="btn ghost" href="{e(hello())}" rel="noopener">WhatsApp</a></div>
 {note("shop")}
-<h2 class="sec"><small>Stay · <span lang="th" class="th">ที่พัก</span></small>Where NaN stays</h2>
+<h2 class="sec"><small>{bi("Stay", "ที่พัก")}</small>{t("Where NaN stays", "ที่ที่ NaN พัก")}</h2>
 {stay_block("")}
 </div>
-{band("c:clock-tower-2", "Ho Nalika · evenings", "Red, green, gold, and then the night bazaar", th="หอนาฬิกาเปลี่ยนสีทุกค่ำเจ้า", href="see/#clock-tower", cta="The clock tower", cls="short")}
+{band("c:clock-tower-2", t("Ho Nalika · evenings", "หอนาฬิกา · ยามค่ำ"), t("Red, green, gold, and then the night bazaar", "แดง เขียว ทอง แล้วก็ไปไนท์บาซาร์"), th="หอนาฬิกาเปลี่ยนสีทุกค่ำเจ้า", href="see/#clock-tower", cta=t("The clock tower", "หอนาฬิกา"), cls="short")}
 """
-    page("", TITLE, "A journey through Chiang Rai and the Golden Triangle — temples, the Mekong, sidequests and the slow boat to Laos, with Laila Group.",
+    page("", t(TITLE, TITLE_TH), t("A journey through Chiang Rai and the Golden Triangle — temples, the Mekong, sidequests and the slow boat to Laos, with Laila Group.",
+                                  "แอ่วเชียงรายและสามเหลี่ยมทองคำ วัด แม่น้ำโขง ที่เที่ยวนอกเส้นทาง และเรือช้าไปลาว กับไลลากรุ๊ป"),
          body, ld=[ORG, {"@context": "https://schema.org", "@type": "WebSite", "name": TITLE, "url": SITE_URL + "/"}])
 
 
@@ -418,11 +515,11 @@ def slug(s):
 def go_line(s, pre):
     parts = []
     if s.get("osm"):
-        parts.append(f'<a href="{osm(s["osm"])}" rel="noopener">Map</a>')
+        parts.append(f'<a href="{osm(s["osm"])}" rel="noopener">{t("Map", "แผนที่")}</a>')
     if s.get("laila"):
-        parts.append(f'<a href="{trip(s["laila"])}" rel="noopener">Go with Laila Group</a>')
+        parts.append(f'<a href="{trip(s["laila"])}" rel="noopener">{t("Go with Laila Group", "ไปกับไลลากรุ๊ป")}</a>')
     if s.get("href"):
-        parts.append(f'<a href="{pre}{s["href"]}">More</a>')
+        parts.append(f'<a href="{pre}{s["href"]}">{t("More", "อ่านต่อ")}</a>')
     return f'<p class="go">{"".join(parts)}</p>' if parts else ""
 
 
@@ -430,22 +527,22 @@ def sight_block(s, pre):
     ratio = 125
     vid = ""
     if s.get("video"):
-        vid = (f'<video src="{pre}{s["video"]}" poster="{pre}{img(s["img"], True)}" preload="none" muted loop playsinline '
-               f'data-tap controls width="270" height="480"></video><span class="cred">Video: NaN · CC BY 4.0</span>')
+        vid = (f'<video src="{A}{s["video"]}" poster="{img(s["img"], True)}" preload="none" muted loop playsinline '
+               f'data-tap controls width="270" height="480"></video><span class="cred">{t("Video", "วิดีโอ")}: NaN · CC BY 4.0</span>')
     kick = f'<span class="kick">{e(s["kicker"])}</span>' if s.get("kicker") else ""
     tht = f'<p class="th" lang="th">{e(s["th_text"])}</p>' if s.get("th_text") else ""
-    href = osm(s["osm"]) if s.get("osm") else "#" + s.get("id", slug(s["name"]))
-    return (f'<section class="sight" id="{s.get("id", slug(s["name"]))}"><figure class="card">'
+    href = osm(s["osm"]) if s.get("osm") else "#" + s["id"]
+    return (f'<section class="sight" id="{s["id"]}"><figure class="card">'
             f'{shot(s["img"], s["th"], href, "", ratio, pre, True)}'
             f'<span class="cred">{credit(s["img"])}</span>{vid}</figure>'
-            f'<div>{kick}<h3>{e(s["name"])}<span class="thn" lang="th">{e(s["th"])}</span></h3>'
+            f'<div>{kick}<h3>{e(s["name"])}<span class="thn" lang="{sub_lang()}">{e(s["th"])}</span></h3>'
             f'<p>{e(s["text"])}</p>{tht}{go_line(s, pre)}</div></section>')
 
 
 def see():
     blocks = []
     for i, s in enumerate(C.SIGHTS):
-        blocks.append(sight_block(s, "../"))
+        blocks.append(sight_block(loc(s, TH.SIGHTS, "id"), "../"))
         if i == 2:
             blocks.append(note("day", "../"))
         if i == 6:
@@ -453,52 +550,59 @@ def see():
         if i == 9:
             blocks.append(note("wa", "../"))
     body = f"""
-<div class="col open"><div class="rubric">The sights · <span lang="th" class="th">ที่เที่ยว</span></div>
-<h1>The Headliners</h1><p class="dek">White, blue, black and gold, and the mountains beyond.</p></div>
-{band("c:white-temple-2", "Wat Rong Khun", "A temple built of light", th="วัดร่องขุ่น งามจับใจ๋เจ้า", cls="short")}
+<div class="col open"><div class="rubric">{bi("The sights", "ที่เที่ยว")}</div>
+<h1>{t("The Headliners", "ที่เที่ยวหลัก")}</h1><p class="dek">{t("White, blue, black and gold, and the mountains beyond.", "ขาว น้ำเงิน ดำ และทอง แล้วก็ภูเขาไกลออกไป")}</p></div>
+{band("c:white-temple-2", t("Wat Rong Khun", "วัดร่องขุ่น"), t("A temple built of light", "วัดที่สร้างจากแสง"), th="วัดร่องขุ่น งามจับใจ๋เจ้า", cls="short")}
 <div class="col">{"".join(blocks)}</div>
-{band("c:phu-chi-fa-3", "Phu Chi Fa", "First light over the mist", th="ทะเลหมอกภูชี้ฟ้า", href=trip("phu-chi-fa-chiang-rai-mountains"), cta="Go before dawn", cls="right")}
+{band("c:phu-chi-fa-3", t("Phu Chi Fa", "ภูชี้ฟ้า"), t("First light over the mist", "แสงแรกเหนือทะเลหมอก"), th="ทะเลหมอกภูชี้ฟ้า", href=trip("phu-chi-fa-chiang-rai-mountains"), cta=t("Go before dawn", "ไปก่อนรุ่งสาง"), cls="right")}
 """
-    page("see/", "The Headliners", "The White Temple, the Blue Temple, the Black House, the golden clock tower and the mountains of Chiang Rai.", body)
+    page("see/", t("The Headliners", "ที่เที่ยวหลัก"), t("The White Temple, the Blue Temple, the Black House, the golden clock tower and the mountains of Chiang Rai.",
+                                                      "วัดร่องขุ่น วัดร่องเสือเต้น บ้านดำ หอนาฬิกาสีทอง และภูเขาของเชียงราย"), body)
 
 
 def golden():
     blocks = []
     for i, s in enumerate(C.GT):
-        blocks.append(sight_block(s, "../"))
+        blocks.append(sight_block(loc(s, TH.GT), "../"))
         if i == 1:
             blocks.append(note("day", "../"))
         if i == 3:
             blocks.append(note("car", "../"))
+    en = LANG == "en"
+    shots = [("own:skywalk-blossom", "Blossom over the glass", "ดอกไม้เหนือพื้นกระจก"), ("own:skywalk-arch", "Toward the river", "มุ่งสู่แม่น้ำ"),
+             ("own:across-mekong", "Across the Mekong", "ข้ามแม่น้ำโขง"), ("own:opium-mural-2", "The farming year", "ปีแห่งการเพาะปลูก")]
     body = f"""
-<div class="col open"><div class="rubric">The highlight · <span lang="th" class="th">สามเหลี่ยมทองคำ</span></div>
-<h1>The Golden Triangle</h1>
-<p class="dek">Three countries, two rivers, one long golden afternoon.</p>
-<p class="dek-th th" lang="th">น้ำรวกบรรจบน้ำโขง ไทย ลาว เมียนมา มาพบกันตรงนี้เจ้า</p></div>
-{band("c:golden-triangle-2", "Sop Ruak", "Where the Ruak meets the Mekong", th="ยามแลงแดดสีทองส่องน้ำโขง งามขนาดเน้อ", cls="tall")}
+<div class="col open"><div class="rubric">{bi("The highlight", "สามเหลี่ยมทองคำ", "ไฮไลต์")}</div>
+<h1>{t("The Golden Triangle", "สามเหลี่ยมทองคำ")}</h1>
+<p class="dek">{t("Three countries, two rivers, one long golden afternoon.", "สามประเทศ สองสายน้ำ หนึ่งบ่ายยาวสีทอง")}</p>
+{'<p class="dek-th th" lang="th">น้ำรวกบรรจบน้ำโขง ไทย ลาว เมียนมา มาพบกันตรงนี้เจ้า</p>' if en else ""}</div>
+{band("c:golden-triangle-2", t("Sop Ruak", "สบรวก"), t("Where the Ruak meets the Mekong", "ที่แม่น้ำรวกบรรจบแม่น้ำโขง"), th="ยามแลงแดดสีทองส่องน้ำโขง งามขนาดเน้อ", cls="tall")}
 <div class="col">
-<blockquote class="pull"><p>“{e(C.QUOTE_GT)}”</p><cite>NaN</cite></blockquote>
-<p class="lede">An hour and a little north of Chiang Rai, past Mae Chan and the turn for Chiang Saen, the road comes down to the water and stops. Across the Mekong is Laos. Up the smaller river, the Ruak, is Myanmar. The bend between them is the Golden Triangle, and in the late afternoon the name explains itself: the light goes gold, the river goes gold, and so does the great seated Buddha on the bank.</p>
-<p>Plan on the whole afternoon. Start at the Hall of Opium, walk the river road to the viewpoint, take a longtail out onto the Mekong, and finish on the glass walkway south of Chiang Saen with the sun going down behind the hills.</p>
-<figure class="polaroid"><img src="../img/own/nan-golden-triangle-t.jpg" alt="NaN at the Golden Triangle" loading="lazy" width="405" height="720"><figcaption>Late afternoon, the first of several visits</figcaption></figure>
+<blockquote class="pull"><p>“{e(quote("QUOTE_GT"))}”</p><cite>NaN</cite></blockquote>
+<p class="lede">{t("An hour and a little north of Chiang Rai, past Mae Chan and the turn for Chiang Saen, the road comes down to the water and stops. Across the Mekong is Laos. Up the smaller river, the Ruak, is Myanmar. The bend between them is the Golden Triangle, and in the late afternoon the name explains itself: the light goes gold, the river goes gold, and so does the great seated Buddha on the bank.",
+                   "ขึ้นเหนือจากเชียงรายไปชั่วโมงกว่า ผ่านแม่จันและทางแยกไปเชียงแสน ถนนจะลงไปถึงริมน้ำแล้วก็สุดทาง ฝั่งโน้นของแม่น้ำโขงคือลาว ขึ้นไปตามแม่น้ำสายเล็กกว่า คือแม่น้ำรวก คือเมียนมา โค้งน้ำระหว่างนั้นคือสามเหลี่ยมทองคำ และยามบ่ายแก่ ชื่อนี้ก็อธิบายตัวเอง แสงกลายเป็นสีทอง แม่น้ำกลายเป็นสีทอง พระพุทธรูปองค์ใหญ่ริมฝั่งก็เป็นสีทองเช่นกัน")}</p>
+<p>{t("Plan on the whole afternoon. Start at the Hall of Opium, walk the river road to the viewpoint, take a longtail out onto the Mekong, and finish on the glass walkway south of Chiang Saen with the sun going down behind the hills.",
+      "เผื่อเวลาไว้ทั้งบ่าย เริ่มที่หอฝิ่น เดินตามถนนริมน้ำไปจุดชมวิว นั่งเรือหางยาวออกไปกลางแม่น้ำโขง แล้วปิดท้ายบนทางเดินกระจกทางใต้ของเชียงแสน ตอนตะวันลับหลังภูเขา")}</p>
+<figure class="polaroid"><img src="{A}img/own/nan-golden-triangle-t.jpg" alt="{t("NaN at the Golden Triangle", "NaN ที่สามเหลี่ยมทองคำ")}" loading="lazy" width="405" height="720"><figcaption>{t("Late afternoon, the first of several visits", "ยามบ่ายแก่ ครั้งแรกจากหลายครั้ง")}</figcaption></figure>
 {"".join(blocks)}
-<blockquote class="pull"><p>“{e(C.QUOTE_OPIUM)}”</p><cite>NaN</cite></blockquote>
-<h2 class="sec"><small>Getting there · <span lang="th" class="th">ไปจะไดเจ้า</span></small>Three ways north</h2>
+<blockquote class="pull"><p>“{e(quote("QUOTE_OPIUM"))}”</p><cite>NaN</cite></blockquote>
+<h2 class="sec"><small>{bi("Getting there", "ไปจะไดเจ้า", "การเดินทาง")}</small>{t("Three ways north", "สามทางขึ้นเหนือ")}</h2>
 <table class="list">
-<tr><td><b><a href="{trip("one-day-sightseeing-tour-in-chiang-rai")}" rel="noopener">Laila Group's one-day tour</a></b><small>Golden Triangle and the Hall of Opium, with the White Temple, Blue Temple and Black House on the same day. Guide and lunch included.</small></td><td class="p">฿1,200</td></tr>
-<tr><td><b><a href="../with-laila/#wheels">A car with a driver</a></b><small>Go at your own pace, stay for the sunset, come back several times.</small></td><td class="p">from ฿1,200 a day</td></tr>
-<tr><td><b><a href="../with-laila/#wheels">A scooter</a></b><small>About seventy kilometres each way on the main road.</small></td><td class="p">from ฿250 a day</td></tr>
-</table><p class="asof">Prices as listed by Laila Group, {C.READ}.</p>
-<h2 class="sec"><small>Stay · <span lang="th" class="th">ที่พัก</span></small>A bed for the night</h2>
-<p>The triangle has grand riverside resorts. NaN goes back to town.</p>
+<tr><td><b><a href="{trip("one-day-sightseeing-tour-in-chiang-rai")}" rel="noopener">{t("Laila Group's one-day tour", "ทริปหนึ่งวันของไลลากรุ๊ป")}</a></b><small>{t("Golden Triangle and the Hall of Opium, with the White Temple, Blue Temple and Black House on the same day. Guide and lunch included.", "สามเหลี่ยมทองคำและหอฝิ่น พร้อมวัดร่องขุ่น วัดร่องเสือเต้น และบ้านดำในวันเดียวกัน รวมไกด์และอาหารกลางวัน")}</small></td><td class="p">฿1,200</td></tr>
+<tr><td><b><a href="../with-laila/#wheels">{t("A car with a driver", "รถพร้อมคนขับ")}</a></b><small>{t("Go at your own pace, stay for the sunset, come back several times.", "ไปตามจังหวะของคุณเอง อยู่ดูตะวันตกดิน แล้วกลับไปอีกหลายครั้ง")}</small></td><td class="p">{t("from ฿1,200 a day", "เริ่มต้นวันละ ฿1,200")}</td></tr>
+<tr><td><b><a href="../with-laila/#wheels">{t("A scooter", "สกู๊ตเตอร์")}</a></b><small>{t("About seventy kilometres each way on the main road.", "ถนนสายหลักราวเจ็ดสิบกิโลเมตรต่อเที่ยว")}</small></td><td class="p">{t("from ฿250 a day", "เริ่มต้นวันละ ฿250")}</td></tr>
+</table><p class="asof">{t(f"Prices as listed by Laila Group, {C.READ}.", f"ราคาตามที่ไลลากรุ๊ปลงไว้ {TH.READ}")}</p>
+<h2 class="sec"><small>{bi("Stay", "ที่พัก")}</small>{t("A bed for the night", "ที่นอนสำหรับคืนนี้")}</h2>
+<p>{t("The triangle has grand riverside resorts. NaN goes back to town.", "ที่สามเหลี่ยมมีรีสอร์ตหรูริมน้ำ แต่ NaN กลับไปนอนในเมือง")}</p>
 {stay_block("../")}
 </div>
 <div class="wide"><div class="shots three">
-{"".join(f'<figure class="card">{shot(r, c, "../roll/", "", 150, "../")}</figure>' for r, c in [("own:skywalk-blossom", "Blossom over the glass"), ("own:skywalk-arch", "Toward the river"), ("own:across-mekong", "Across the Mekong"), ("own:opium-mural-2", "The farming year")])}
+{"".join(f'<figure class="card">{shot(r, t(c, ct), "../roll/", "", 150, "../")}</figure>' for r, c, ct in shots)}
 </div></div>
-{band("c:mekong-2", "Chiang Saen", "Keep going: the river runs all the way to Luang Prabang", href="slow-boat/", cta="The slow boat", cls="right")}
+{band("c:mekong-2", t("Chiang Saen", "เชียงแสน"), t("Keep going: the river runs all the way to Luang Prabang", "ไปต่อเถอะ แม่น้ำไหลไปถึงหลวงพระบาง"), href="slow-boat/", cta=t("The slow boat", "เรือช้า"), cls="right")}
 """
-    page("golden-triangle/", "The Golden Triangle", "Sop Ruak, the golden Buddha, the Hall of Opium, the glass walkway and Chiang Saen — the highlight of Chiang Rai.", body,
+    page("golden-triangle/", t("The Golden Triangle", "สามเหลี่ยมทองคำ"), t("Sop Ruak, the golden Buddha, the Hall of Opium, the glass walkway and Chiang Saen — the highlight of Chiang Rai.",
+                                                                        "สบรวก พระพุทธรูปทองคำ หอฝิ่น ทางเดินกระจก และเชียงแสน ไฮไลต์ของเชียงราย"), body,
          ld=[{"@context": "https://schema.org", "@type": "TouristAttraction", "name": "Golden Triangle (Sop Ruak)",
               "geo": {"@type": "GeoCoordinates", "latitude": 20.3526, "longitude": 100.0818}},
              {"@context": "https://schema.org", "@type": "ImageObject", "contentUrl": CANON + "/img/own/across-mekong.jpg",
@@ -509,48 +613,57 @@ def golden():
 def sidequests():
     blocks = []
     for i, s in enumerate(C.SIDE):
-        blocks.append(sight_block(dict(s, id=slug(s["name"])), "../"))
+        blocks.append(sight_block(loc(s, TH.SIDE), "../"))
         if i in (2, 7):
             blocks.append(note(["shop", "visa"][i == 7], "../"))
     body = f"""
-<div class="col open"><div class="rubric">Sidequests · <span lang="th" class="th">แอ่วนอกเส้นทาง</span></div>
-<h1>The Small Wonders</h1><p class="dek">Vanilla, painted pillars, a warm waterfall, eggs boiled in a spring, and khao soi twice a day.</p></div>
+<div class="col open"><div class="rubric">{bi("Sidequests", "แอ่วนอกเส้นทาง")}</div>
+<h1>{t("The Small Wonders", "สิ่งเล็ก ๆ ที่น่าทึ่ง")}</h1><p class="dek">{t("Vanilla, painted pillars, a warm waterfall, eggs boiled in a spring, and khao soi twice a day.", "วานิลลา เสาภาพวาด น้ำตกน้ำอุ่น ไข่ต้มในบ่อน้ำร้อน และข้าวซอยวันละสองรอบ")}</p></div>
 <div class="col">{"".join(blocks)}</div>
-{band("c:kok-river-2", "Mae Nam Kok", "The river through town", th="แม่น้ำกก ไหลผ่านกลางเมืองเจ้า", cls="short")}
+{band("c:kok-river-2", t("Mae Nam Kok", "แม่น้ำกก"), t("The river through town", "แม่น้ำกลางเมือง"), th="แม่น้ำกก ไหลผ่านกลางเมืองเจ้า", cls="short")}
 """
-    page("sidequests/", "Sidequests", "Chiang Rai's small wonders — vanilla farm, bus-station murals, hot-spring eggs, a warm waterfall, khao soi.", body)
+    page("sidequests/", t("Sidequests", "แอ่วนอกเส้นทาง"), t("Chiang Rai's small wonders — vanilla farm, bus-station murals, hot-spring eggs, a warm waterfall, khao soi.",
+                                                            "สิ่งเล็ก ๆ ที่น่าทึ่งของเชียงราย ฟาร์มวานิลลา ภาพวาดที่สถานีขนส่ง ไข่ต้มน้ำพุร้อน น้ำตกน้ำอุ่น ข้าวซอย"), body)
 
 
 def slowboat():
+    en = LANG == "en"
+    B = [loc(dict(b, text=b["text"]), TH.BOATS, "slug") for b in C.BOATS]
     rows = "".join(
-        f'<tr><td><b><a href="{trip(b["slug"])}" rel="noopener">{e(b["name"])}</a></b> <span class="th" lang="th">{e(b["th"])}</span>'
-        f'<small>{e(b["days"])} · {e(b["text"])}</small></td><td class="p">{thb(b["price"])}</td></tr>' for b in C.BOATS)
-    trains = "".join(f'<tr><td><a href="{trip(s)}" rel="noopener">{e(n)}</a></td><td class="p">{thb(p)}</td></tr>' for n, s, p in C.TRAINS)
+        f'<tr><td><b><a href="{trip(b["slug"])}" rel="noopener">{e(b["name"])}</a></b> <span class="th" lang="{sub_lang()}">{e(b["th"])}</span>'
+        f'<small>{e(b["days"])} · {e(b["text"])}</small></td><td class="p">{thb(b["price"])}</td></tr>' for b in B)
+    trains = "".join(f'<tr><td><a href="{trip(s)}" rel="noopener">{e(t(n, TH.TRAINS[s]))}</a></td><td class="p">{thb(p)}</td></tr>' for n, s, p in C.TRAINS)
+    shots = [("c:chiang-khong-1", "Chiang Khong", "เชียงของ"), ("c:slow-boat-1", "Pak Beng", "ปากแบ่ง"), ("c:luang-prabang-3", "Luang Prabang", "หลวงพระบาง")]
     body = f"""
-<div class="col open"><div class="rubric">Laila Group · <span lang="th" class="th">เรือช้า</span></div>
-<h1>The Slow Boat</h1><p class="dek">Two days down the Mekong from Chiang Rai to Luang Prabang, with a night in Pak Beng between.</p>
-<p class="dek-th th" lang="th">ล่องเรือช้าน้ำโขงไปหลวงพระบาง นอนปากแบ่งหนึ่งคืน ไลลากรุ๊ปมารับถึงที่พักตั้งแต่เช้ามืด พาข้ามด่าน ส่งถึงท่าเรือเจ้า</p></div>
-{band("c:luang-prabang-2", "The Mekong", "The long way is the lovely way", th="ทางไกลที่งามที่สุดเจ้า", cls="tall")}
+<div class="col open"><div class="rubric">{bi("Laila Group", "เรือช้า")}</div>
+<h1>{t("The Slow Boat", "เรือช้า")}</h1><p class="dek">{t("Two days down the Mekong from Chiang Rai to Luang Prabang, with a night in Pak Beng between.", "ล่องแม่น้ำโขงสองวันจากเชียงรายไปหลวงพระบาง แวะนอนปากแบ่งหนึ่งคืน")}</p>
+{'<p class="dek-th th" lang="th">ล่องเรือช้าน้ำโขงไปหลวงพระบาง นอนปากแบ่งหนึ่งคืน ไลลากรุ๊ปมารับถึงที่พักตั้งแต่เช้ามืด พาข้ามด่าน ส่งถึงท่าเรือเจ้า</p>' if en else ""}</div>
+{band("c:luang-prabang-2", t("The Mekong", "แม่น้ำโขง"), t("The long way is the lovely way", "ทางไกลคือทางที่งดงาม"), th="ทางไกลที่งามที่สุดเจ้า", cls="tall")}
 <div class="col">
 {note("wa", "../")}
-<p class="lede">It begins in the dark. Laila Group's van collects you from your hotel at five, and by the time the sun is up you are at the river at Chiang Khong with your passport stamped. Across the bridge is Huay Xai; below it the long wooden boats wait at the pier. At ten you cast off.</p>
-<p>For two days the Mekong carries you between green hills, past sand bars and fishing boats and villages that come down to the water. The first night is at Pak Beng, a river town that exists to welcome the boats. On the second afternoon, Luang Prabang.</p>
-<h2 class="sec"><small>The boats · <span lang="th" class="th">เรือ</span></small>Choose your river</h2>
+<p class="lede">{t("It begins in the dark. Laila Group's van collects you from your hotel at five, and by the time the sun is up you are at the river at Chiang Khong with your passport stamped. Across the bridge is Huay Xai; below it the long wooden boats wait at the pier. At ten you cast off.",
+                   "ทุกอย่างเริ่มตอนฟ้ายังมืด รถตู้ของไลลากรุ๊ปมารับที่โรงแรมตอนตีห้า พอตะวันขึ้น คุณก็อยู่ริมแม่น้ำที่เชียงของ พาสปอร์ตประทับตราเรียบร้อย ข้ามสะพานไปคือห้วยทราย ใต้สะพาน เรือไม้ลำยาวจอดรออยู่ที่ท่า สิบโมงเรือออก")}</p>
+<p>{t("For two days the Mekong carries you between green hills, past sand bars and fishing boats and villages that come down to the water. The first night is at Pak Beng, a river town that exists to welcome the boats. On the second afternoon, Luang Prabang.",
+      "สองวันเต็ม แม่น้ำโขงพาคุณผ่านขุนเขาเขียวขจี ผ่านสันทราย เรือหาปลา และหมู่บ้านที่ลงมาถึงริมน้ำ คืนแรกพักที่ปากแบ่ง เมืองริมน้ำที่อยู่เพื่อต้อนรับเรือ บ่ายวันที่สอง ถึงหลวงพระบาง")}</p>
+<h2 class="sec"><small>{bi("The boats", "เรือ")}</small>{t("Choose your river", "เลือกเส้นทางของคุณ")}</h2>
 <table class="list">{rows}</table>
-<p class="asof">Prices as listed by Laila Group, {C.READ}. Pack US dollars for the Lao visa on arrival (USD 40 on her listing) and your passport photo.</p>
-<div class="ctas"><a class="btn" href="{trip("slow-boat-chiang-rai-to-luang-prabang")}" rel="noopener">Book the slow boat</a><a class="btn ghost" href="{e(C.wa("Hello Laila Group! I would like the slow boat to Luang Prabang."))}" rel="noopener">Ask on WhatsApp</a></div>
+<p class="asof">{t(f"Prices as listed by Laila Group, {C.READ}. Pack US dollars for the Lao visa on arrival (USD 40 on her listing) and your passport photo.",
+                  f"ราคาตามที่ไลลากรุ๊ปลงไว้ {TH.READ} ผู้ถือหนังสือเดินทางต่างชาติ เตรียมเงินดอลลาร์สหรัฐสำหรับวีซ่าลาวแบบ visa on arrival (USD 40 ตามที่ลงไว้) และรูปถ่ายติดพาสปอร์ต")}</p>
+<div class="ctas"><a class="btn" href="{trip("slow-boat-chiang-rai-to-luang-prabang")}" rel="noopener">{t("Book the slow boat", "จองเรือช้า")}</a><a class="btn ghost" href="{e(C.wa(t("Hello Laila Group! I would like the slow boat to Luang Prabang.", "สวัสดีเจ้า ไลลากรุ๊ป อยากจองเรือช้าไปหลวงพระบางเจ้า")))}" rel="noopener">{t("Ask on WhatsApp", "ถามทาง WhatsApp")}</a></div>
 </div>
 <div class="wide"><div class="shots three">
-{shot("c:chiang-khong-1", "Chiang Khong", "../with-laila/", "เชียงของ", 66, "../")}{shot("c:slow-boat-1", "Pak Beng", "../with-laila/", "ปากแบ่ง", 66, "../")}{shot("c:luang-prabang-3", "Luang Prabang", "../with-laila/", "หลวงพระบาง", 66, "../")}
+{"".join(shot(r, t(n, th), "../with-laila/", t(th, n), 66, "../") for r, n, th in shots)}
 </div></div>
 <div class="col">
-<h2 class="sec"><small>Or by rail · <span lang="th" class="th">รถไฟลาว-จีน</span></small>The train through Laos</h2>
-<p>Laila Group also runs the fast way: across the border and onto the Laos–China Railway, Luang Prabang the same day, Vang Vieng and Vientiane beyond.</p>
+<h2 class="sec"><small>{bi("Or by rail", "รถไฟลาว-จีน")}</small>{t("The train through Laos", "รถไฟผ่านลาว")}</h2>
+<p>{t("Laila Group also runs the fast way: across the border and onto the Laos–China Railway, Luang Prabang the same day, Vang Vieng and Vientiane beyond.",
+      "ไลลากรุ๊ปมีทางเร็วด้วย ข้ามด่านแล้วขึ้นรถไฟลาว–จีน ถึงหลวงพระบางในวันเดียว และไปต่อวังเวียงกับเวียงจันทน์")}</p>
 <table class="list">{trains}</table>
 {note("desk", "../")}
 </div>
 """
-    page("slow-boat/", "The Slow Boat", "Laila Group's slow boat from Chiang Rai to Luang Prabang, from ฿1,690 — plus the train and bus to Laos.", body,
+    page("slow-boat/", t("The Slow Boat", "เรือช้า"), t("Laila Group's slow boat from Chiang Rai to Luang Prabang, from ฿1,690 — plus the train and bus to Laos.",
+                                                     "เรือช้าของไลลากรุ๊ปจากเชียงรายไปหลวงพระบาง เริ่มต้น ฿1,690 พร้อมรถไฟและรถบัสไปลาว"), body,
          ld=[ORG, {"@context": "https://schema.org", "@type": "TouristTrip", "name": "Slow boat Chiang Rai to Luang Prabang",
                    "provider": {"@type": "TravelAgency", "name": "Laila Group Chiangrai Tour"},
                    "offers": {"@type": "Offer", "price": "1690", "priceCurrency": "THB",
@@ -558,109 +671,137 @@ def slowboat():
 
 
 def laila():
-    days = "".join(f'<tr><td><b><a href="{trip(s)}" rel="noopener">{e(n)}</a></b><small>{e(t)}</small></td><td class="p">{e(p)}</td></tr>' for n, s, p, t in C.DAYS)
-    wheels = "".join(f'<tr><td><a href="{trip(s)}" rel="noopener">{e(n)}</a></td><td class="p">{thb(p)} a day</td></tr>' for n, s, p in C.WHEELS)
-    visas = "".join(f'<tr><td><b>{e(n)}</b><small>{e(t)}</small></td></tr>' for n, t in C.VISAS)
-    boats = "".join(f'<tr><td><a href="{trip(b["slug"])}" rel="noopener">{e(b["name"])}</a></td><td class="p">{thb(b["price"])}</td></tr>' for b in C.BOATS)
+    en = LANG == "en"
+
+    def day(n, s, p, x):
+        return (n, p, x) if en else TH.DAYS[s]
+    days = "".join(f'<tr><td><b><a href="{trip(s)}" rel="noopener">{e(dn)}</a></b><small>{e(dx)}</small></td><td class="p">{e(dp)}</td></tr>'
+                   for n, s, p, x in C.DAYS for dn, dp, dx in [day(n, s, p, x)])
+    wheels = "".join(f'<tr><td><a href="{trip(s)}" rel="noopener">{e(t(n, TH.WHEELS.get(s, n)))}</a></td><td class="p">{thb(p)} {t("a day", "ต่อวัน")}</td></tr>' for n, s, p in C.WHEELS)
+    visas = "".join(f'<tr><td><b>{e(vn)}</b><small>{e(vx)}</small></td></tr>'
+                    for n, x in C.VISAS for vn, vx in [(n, x) if en else TH.VISAS[n]])
+    boats = "".join(f'<tr><td><a href="{trip(b["slug"])}" rel="noopener">{e(t(b["name"], b["th"]))}</a></td><td class="p">{thb(b["price"])}</td></tr>' for b in C.BOATS)
+    osm_map = f"https://www.openstreetmap.org/?mlat={C.OFFICE[0]}&amp;mlon={C.OFFICE[1]}#map=18/{C.OFFICE[0]}/{C.OFFICE[1]}"
+    osm_dir = f"https://www.openstreetmap.org/directions?to={C.OFFICE[0]}%2C{C.OFFICE[1]}"
+    where = (f'<p><b>Where:</b> {e(C.ADDRESS)}, at Sofia Hostel. <span lang="th" class="th">{e(C.ADDRESS_TH)}</span> · <a href="{osm_map}" rel="noopener">Map</a> ·\n'
+             f'<a href="{osm_dir}" rel="noopener">Directions</a></p>\n'
+             f'<p>Also on <a href="{C.FB}" rel="noopener">Facebook</a> and <a href="{C.IG}" rel="noopener">Instagram</a>.</p>') if en else (
+             f'<p><b>ที่อยู่:</b> {e(C.ADDRESS_TH)} ที่โซเฟียโฮสเทล <span lang="en">{e(C.ADDRESS)}</span> · <a href="{osm_map}" rel="noopener">แผนที่</a> ·\n'
+             f'<a href="{osm_dir}" rel="noopener">เส้นทาง</a></p>\n'
+             f'<p>ติดตามได้ทาง <a href="{C.FB}" rel="noopener">Facebook</a> และ <a href="{C.IG}" rel="noopener">Instagram</a></p>')
     body = f"""
-<div class="col open"><div class="rubric">Presented with · <span lang="th" class="th">ไลลากรุ๊ป</span></div>
-<h1>Laila Group</h1><p class="dek">Tours, boats, trains, cars, visas and a designer consignment shop, from one alley in the middle of Chiang Rai.</p>
-<p class="dek-th th" lang="th">ไลลากรุ๊ป ซอยไทยวิวัฒน์ เชียงราย — ทัวร์ เรือช้า รถไฟไปลาว รถเช่า วีซ่า แล้วก็ร้านแบรนด์เนมฝากขายเจ้า</p></div>
+<div class="col open"><div class="rubric">{bi("Presented with", "ไลลากรุ๊ป", "ร่วมนำเสนอโดย")}</div>
+<h1>{t("Laila Group", "ไลลากรุ๊ป")}</h1><p class="dek">{t("Tours, boats, trains, cars, visas and a designer consignment shop, from one alley in the middle of Chiang Rai.", "ทัวร์ เรือ รถไฟ รถ วีซ่า และร้านแบรนด์เนมฝากขาย จากซอยเดียวกลางเมืองเชียงราย")}</p>
+{'<p class="dek-th th" lang="th">ไลลากรุ๊ป ซอยไทยวิวัฒน์ เชียงราย — ทัวร์ เรือช้า รถไฟไปลาว รถเช่า วีซ่า แล้วก็ร้านแบรนด์เนมฝากขายเจ้า</p>' if en else ""}</div>
 <div class="col">
-<div class="ctas"><a class="btn" href="{e(C.wa("Hello Laila Group! I found you on Chiang Rai, Slowly."))}" rel="noopener">WhatsApp {e(C.PHONE)}</a>
-<a class="btn ghost" href="{C.SHOP}/" rel="noopener">slowboatthailandlaos.com</a><a class="btn ghost" href="mailto:{C.MAIL}">Email</a></div>
-<p><b>Where:</b> {e(C.ADDRESS)}, at Sofia Hostel. <span lang="th" class="th">{e(C.ADDRESS_TH)}</span> · <a href="https://www.openstreetmap.org/?mlat={C.OFFICE[0]}&amp;mlon={C.OFFICE[1]}#map=18/{C.OFFICE[0]}/{C.OFFICE[1]}" rel="noopener">Map</a> ·
-<a href="https://www.openstreetmap.org/directions?to={C.OFFICE[0]}%2C{C.OFFICE[1]}" rel="noopener">Directions</a></p>
-<p>Also on <a href="{C.FB}" rel="noopener">Facebook</a> and <a href="{C.IG}" rel="noopener">Instagram</a>.</p>
-<h2 class="sec" id="boats"><small>To Laos · <span lang="th" class="th">ไปลาว</span></small>Slow boats</h2>
-<table class="list">{boats}</table><p><a href="../slow-boat/">The slow boat, day by day →</a></p>
-<h2 class="sec" id="days"><small>Day trips · <span lang="th" class="th">เที่ยวรายวัน</span></small>Every mountain</h2>
+<div class="ctas"><a class="btn" href="{e(hello())}" rel="noopener">WhatsApp {e(C.PHONE)}</a>
+<a class="btn ghost" href="{C.SHOP}/" rel="noopener">slowboatthailandlaos.com</a><a class="btn ghost" href="mailto:{C.MAIL}">{t("Email", "อีเมล")}</a></div>
+{where}
+<h2 class="sec" id="boats"><small>{bi("To Laos", "ไปลาว")}</small>{t("Slow boats", "เรือช้า")}</h2>
+<table class="list">{boats}</table><p><a href="../slow-boat/">{t("The slow boat, day by day", "เรือช้า วันต่อวัน")} →</a></p>
+<h2 class="sec" id="days"><small>{bi("Day trips", "เที่ยวรายวัน")}</small>{t("Every mountain", "ทุกดอย")}</h2>
 <table class="list">{days}</table>
 {note("desk", "../")}
-<h2 class="sec" id="wheels"><small>By the day · <span lang="th" class="th">รถเช่า</span></small>Wheels</h2>
+<h2 class="sec" id="wheels"><small>{bi("By the day", "รถเช่า")}</small>{t("Wheels", "รถเช่ารายวัน")}</h2>
 <table class="list">{wheels}</table>
-<p class="asof">Prices as listed by Laila Group, {C.READ}. Cars come with a driver.</p>
-<h2 class="sec" id="visas"><small>Visa Services Thailand · <span lang="th" class="th">วีซ่า</span></small>The visa office</h2>
-<p>For a longer stay, Laila Group's visa office handles the paperwork from consultation to approval, and the bank account and tax number after.</p>
+<p class="asof">{t(f"Prices as listed by Laila Group, {C.READ}. Cars come with a driver.", f"ราคาตามที่ไลลากรุ๊ปลงไว้ {TH.READ} รถยนต์มาพร้อมคนขับ")}</p>
+<h2 class="sec" id="visas"><small>{bi("Visa Services Thailand", "วีซ่า")}</small>{t("The visa office", "สำนักงานวีซ่า")}</h2>
+<p>{t("For a longer stay, Laila Group's visa office handles the paperwork from consultation to approval, and the bank account and tax number after.",
+      "สำหรับการพำนักระยะยาว สำนักงานวีซ่าของไลลากรุ๊ปดูแลเอกสารตั้งแต่ให้คำปรึกษาจนได้รับอนุมัติ รวมถึงบัญชีธนาคารและเลขประจำตัวผู้เสียภาษีหลังจากนั้น")}</p>
 <table class="list">{visas}</table>
 <div class="ctas"><a class="btn ghost" href="{C.VISA}" rel="noopener">visaservicesthailand.com</a></div>
-<aside class="note"><span class="nk">In Chiang Mai <span lang="th" class="th">· เชียงใหม่</span></span><p>Chiang Mai Visa Desk, for Thai visas in Chiang Mai, and for Thai families bound for America.</p><a href="{C.DESK}" rel="noopener">chiangmaivisadesk.com →</a></aside>
-<h2 class="sec" id="shop"><small>Laila's Designer Consignment · <span lang="th" class="th">ร้านแบรนด์เนมฝากขาย</span></small>The shop</h2>
-<p>Designer pieces, consigned, next door to the visa office on Thai Viwat Alley. Come in and see what has arrived; or bring something beautiful of your own to leave with Laila.</p>
-<p class="th" lang="th">ของแบรนด์เนมสภาพงาม ฝากขายได้ ซื้อได้ อยู่ติดกับสำนักงานวีซ่าเจ้า แวะมาแอ่วเน้อ</p>
+<aside class="note"><span class="nk">{t('In Chiang Mai <span lang="th" class="th">· เชียงใหม่</span>', 'เชียงใหม่ · <span lang="en">In Chiang Mai</span>')}</span><p>{t("Chiang Mai Visa Desk, for Thai visas in Chiang Mai, and for Thai families bound for America.", "Chiang Mai Visa Desk รับทำวีซ่าไทยในเชียงใหม่ และดูแลครอบครัวคนไทยที่จะไปอเมริกา")}</p><a href="{C.DESK}" rel="noopener">chiangmaivisadesk.com →</a></aside>
+<h2 class="sec" id="shop"><small>{bi("Laila's Designer Consignment", "ร้านแบรนด์เนมฝากขาย")}</small>{t("The shop", "ร้าน")}</h2>
+<p>{t("Designer pieces, consigned, next door to the visa office on Thai Viwat Alley. Come in and see what has arrived; or bring something beautiful of your own to leave with Laila.",
+      "ของแบรนด์เนมฝากขาย อยู่ติดกับสำนักงานวีซ่าในซอยไทยวิวัฒน์ แวะมาดูว่ามีอะไรมาใหม่ หรือนำของสวย ๆ ของคุณมาฝากขายกับไลลา")}</p>
+{'<p class="th" lang="th">ของแบรนด์เนมสภาพงาม ฝากขายได้ ซื้อได้ อยู่ติดกับสำนักงานวีซ่าเจ้า แวะมาแอ่วเน้อ</p>' if en else ""}
 </div>
-{band("c:mekong-3", "Laila Group", "The river is waiting", th="ทักมาได้เน้อเจ้า", href=C.wa("Hello Laila Group! I found you on Chiang Rai, Slowly."), cta="Say hello", cls="short")}
+{band("c:mekong-3", t("Laila Group", "ไลลากรุ๊ป"), t("The river is waiting", "แม่น้ำรออยู่"), th="ทักมาได้เน้อเจ้า", href=hello(), cta=t("Say hello", "ทักทาย"), cls="short")}
 """
-    page("with-laila/", "Laila Group", "Laila Group, Chiang Rai: slow boats and trains to Laos, day trips, cars and scooters, visas, and designer consignment.", body, ld=[ORG])
-
+    page("with-laila/", t("Laila Group", "ไลลากรุ๊ป"), t("Laila Group, Chiang Rai: slow boats and trains to Laos, day trips, cars and scooters, visas, and designer consignment.",
+                                                       "ไลลากรุ๊ป เชียงราย เรือช้าและรถไฟไปลาว ทริปรายวัน รถยนต์และสกู๊ตเตอร์ วีซ่า และร้านแบรนด์เนมฝากขาย"), body, ld=[ORG])
 
 
 def skyband(ref, kicker, head, th, pre="{PRE}", count=False, href="", cta=""):
+    """head is English, th is Thai; the page's own language goes large."""
+    big, small = (th, head) if LANG == "th" else (head, th)
     cnt = ""
     if count:
         cnt = ('<div class="count" data-count><svg viewBox="-50 -50 100 100" data-moon aria-hidden="true">'
                '<circle r="46" fill="#2a2433"/><path fill="#fff4d6" d=""/></svg>'
-               '<div><b>–</b><small>nights to the Yi Peng moon · 24 Nov 2026</small></div></div>')
+               f'<div><b>–</b><small>{t("nights to the Yi Peng moon · 24 Nov 2026", "คืน ถึงคืนเพ็ญยี่เป็ง · 24 พ.ย. 2569")}</small></div></div>')
     btn = f'<p><a class="btn" href="{"" if href.startswith("http") else pre}{e(href)}">{e(cta)}</a></p>' if href else ""
-    return (f'<section class="skyband" style="background-image:url({pre}{img(ref)})"><canvas class="sky" aria-hidden="true"></canvas>'
-            f'<div class="in"><span class="kicker">{e(kicker)}</span><h2>{e(head)}</h2><div class="thbig" lang="th">{e(th)}</div>'
-            f'{cnt}{btn}<p class="tap">Tap the sky</p></div><span class="cred" style="position:absolute;right:0;bottom:0;'
+    return (f'<section class="skyband" style="background-image:url({img(ref)})"><canvas class="sky" aria-hidden="true"></canvas>'
+            f'<div class="in"><span class="kicker">{e(kicker)}</span><h2>{e(big)}</h2><div class="thbig" lang="{sub_lang()}">{e(small)}</div>'
+            f'{cnt}{btn}<p class="tap">{t("Tap the sky", "แตะท้องฟ้า")}</p></div><span class="cred" style="position:absolute;right:0;bottom:0;'
             f'background:rgba(0,0,0,.6);padding:.2rem .5rem">{credit(ref)}</span></section>')
 
 
 def lanterns():
+    en = LANG == "en"
+    L = [dict(l, th=l["name"], name=l["th"], line=TH.LANTERNS[l["name"]]) if not en else l for l in C.LANTERNS]
     cards = "".join(
         f'<figure class="card"><a class="shot" href="{e(osm(l["osm"]) if l.get("osm") else "#float")}" rel="noopener">'
-        f'<span class="bg" style="background-image:url(../{img(l["img"])})"></span><span class="scrim"></span>'
+        f'<span class="bg" style="background-image:url({img(l["img"])})"></span><span class="scrim"></span>'
         f'<span class="sp" style="padding-top:120%"></span><span class="tx"><b>{e(l["name"])}</b><i>{e(l["th"])}</i>'
-        f'<p>{e(l["line"])}</p></span></a></figure>' for l in C.LANTERNS)
+        f'<p>{e(l["line"])}</p></span></a></figure>' for l in L)
+    shots = [("c:lantern-field", "Lanterns", "โคมลอย"), ("c:lantern-candles", "Candles", "ประทีป"), ("c:krathong-float", "Krathong", "กระทง")]
     body = f"""
-{skyband("c:lantern-sky", "Yi Peng · Loy Krathong", "Lantern Night", "ยี่เป็ง ลอยกระทง", count=True)}
+{skyband("c:lantern-sky", t("Yi Peng · Loy Krathong", "ยี่เป็ง · ลอยกระทง"), "Lantern Night", t("ยี่เป็ง ลอยกระทง", "คืนโคมลอย"), count=True)}
 <div class="col" style="text-align:center">
-<p class="dek">One full moon. Lanterns up, krathongs down the river, and every wish with them.</p>
-<p class="dek-th th" lang="th">คืนเพ็ญเดือนยี่ โคมลอยขึ้นฟ้า กระทงลอยตามน้ำ ขอให้โชคดีมีสุขเจ้า</p>
+<p class="dek">{t("One full moon. Lanterns up, krathongs down the river, and every wish with them.", "คืนเพ็ญหนึ่งคืน โคมลอยขึ้นฟ้า กระทงลอยตามน้ำ และทุกคำอธิษฐานก็ลอยไปด้วยกัน")}</p>
+{'<p class="dek-th th" lang="th">คืนเพ็ญเดือนยี่ โคมลอยขึ้นฟ้า กระทงลอยตามน้ำ ขอให้โชคดีมีสุขเจ้า</p>' if en else ""}
 </div>
 <div class="bigshots">{cards}</div>
 <div class="col" id="float">
 {note("lantern", "../")}
-<h2 class="sec"><small>Three nights · <span lang="th" class="th">สามคืน</span></small>Around the full moon</h2>
-<p>Chiang Rai lights the Kok and Chiang Saen lights the Mekong over the nights around the full moon. The city posts its programme in the weeks before.</p>
-<p class="th" lang="th">งานในเมืองเข้าฟรีเจ้า กระทงใบตองราว 30–100 บาท</p>
+<h2 class="sec"><small>{bi("Three nights", "สามคืน")}</small>{t("Around the full moon", "รอบคืนเพ็ญ")}</h2>
+<p>{t("Chiang Rai lights the Kok and Chiang Saen lights the Mekong over the nights around the full moon. The city posts its programme in the weeks before.",
+      "เชียงรายจุดไฟริมแม่น้ำกก และเชียงแสนจุดไฟริมแม่น้ำโขง ตลอดหลายคืนรอบวันเพ็ญ เมืองจะประกาศกำหนดการล่วงหน้าไม่กี่สัปดาห์")}</p>
+{'<p class="th" lang="th">งานในเมืองเข้าฟรีเจ้า กระทงใบตองราว 30–100 บาท</p>' if en else "<p>งานในเมืองเข้าฟรีเจ้า กระทงใบตองราว 30–100 บาท</p>"}
 </div>
-{band("c:lantern-many", "The wish goes up", "A sky of lanterns", th="โคมลอยพาความทุกข์ลอยไปเจ้า", href="with-laila/", cta="Plan it with Laila", cls="tall")}
-<div class="wide"><div class="shots three">{shot("c:lantern-field", "Lanterns", "../golden-triangle/", "โคมลอย", 66, "../")}{shot("c:lantern-candles", "Candles", "../golden-triangle/", "ประทีป", 66, "../")}{shot("c:krathong-float", "Krathong", "../golden-triangle/", "กระทง", 66, "../")}</div></div>
+{band("c:lantern-many", t("The wish goes up", "คำอธิษฐานลอยขึ้นฟ้า"), t("A sky of lanterns", "ท้องฟ้าเต็มไปด้วยโคม"), th="โคมลอยพาความทุกข์ลอยไปเจ้า", href="with-laila/", cta=t("Plan it with Laila", "วางแผนกับไลลา"), cls="tall")}
+<div class="wide"><div class="shots three">{"".join(shot(r, t(n, th), "../golden-triangle/", t(th, n), 66, "../") for r, n, th in shots)}</div></div>
 """
-    page("lanterns/", "Lantern Night", "Yi Peng and Loy Krathong in Chiang Rai and Chiang Saen — the Kok River, four nations on the Mekong, and your own krathong. 24 November 2026.", body,
+    page("lanterns/", t("Lantern Night", "คืนโคมลอย"), t("Yi Peng and Loy Krathong in Chiang Rai and Chiang Saen — the Kok River, four nations on the Mekong, and your own krathong. 24 November 2026.",
+                                                     "ยี่เป็งและลอยกระทงที่เชียงรายและเชียงแสน แม่น้ำกก สี่ชาติบนแม่น้ำโขง และกระทงของคุณเอง 24 พฤศจิกายน 2569"), body,
          ld=[{"@context": "https://schema.org", "@type": "Event", "name": "Yi Peng & Loy Krathong, Chiang Rai", "startDate": C.LANTERN_NIGHT,
               "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
               "location": {"@type": "Place", "name": "Kok River, Chiang Rai", "address": "Chiang Rai, Thailand"}}])
 
 
 def roll():
-    figs = "".join(f'<figure><img src="../img/own/{k}-t.jpg" alt="{e(v.get("alt") or v["caption"])}" loading="lazy" width="{v["w"]}" height="{v["h"]}">'
-                   f'<figcaption>{e(v["caption"])}</figcaption></figure>' for k, v in OWN.items())
+    en = LANG == "en"
+
+    def cap(k, v):
+        return (v.get("alt") or v["caption"], v["caption"]) if en else (TH.ALT.get(k) or TH.CAPTIONS[k], TH.CAPTIONS[k])
+    figs = "".join(f'<figure><img src="{A}img/own/{k}-t.jpg" alt="{e(alt)}" loading="lazy" width="{v["w"]}" height="{v["h"]}">'
+                   f'<figcaption>{e(c)}</figcaption></figure>' for k, v in OWN.items() for alt, c in [cap(k, v)])
     body = f"""
-<div class="col open"><div class="rubric">From the camera roll · <span lang="th" class="th">ภาพถ่าย</span></div>
-<h1>NaN's Roll</h1><p class="dek">February to June, Chiang Rai and the Golden Triangle, as they came off the phone.</p></div>
+<div class="col open"><div class="rubric">{bi("From the camera roll", "ภาพถ่าย")}</div>
+<h1>{t("NaN's Roll", "ภาพของ NaN")}</h1><p class="dek">{t("February to June, Chiang Rai and the Golden Triangle, as they came off the phone.", "กุมภาพันธ์ถึงมิถุนายน เชียงรายและสามเหลี่ยมทองคำ ตามที่ถ่ายไว้ในมือถือ")}</p></div>
 <div class="wide"><div class="roll">{figs}</div>
-<p class="cred">Photographs by NaN, CC BY 4.0.</p></div>
+<p class="cred">{t("Photographs by NaN, CC BY 4.0.", "ภาพถ่ายโดย NaN, CC BY 4.0")}</p></div>
 <div class="col">{note("day", "../")}</div>
 """
-    page("roll/", "NaN's Roll", "Chiang Rai and the Golden Triangle from NaN's camera roll.", body)
+    page("roll/", t("NaN's Roll", "ภาพของ NaN"), t("Chiang Rai and the Golden Triangle from NaN's camera roll.", "เชียงรายและสามเหลี่ยมทองคำ จากภาพในมือถือของ NaN"), body)
 
 
 def credits():
     rows = "".join(f'<tr><td><a href="{e(c["page"])}" rel="noopener">{e(c["title"][5:])}</a><small>{e(c["author"])}</small></td>'
                    f'<td class="p"><a href="{e(c["licence_url"])}" rel="noopener">{e(c["licence"])}</a></td></tr>' for c in CRED.values())
-    body = f"""<div class="col open"><h1>Credits</h1></div><div class="col">
-<p>Photographs marked NaN are hers, CC BY 4.0. These are from Wikimedia Commons, each under its own licence:</p>
+    body = f"""<div class="col open"><h1>{t("Credits", "เครดิต")}</h1></div><div class="col">
+<p>{t("Photographs marked NaN are hers, CC BY 4.0. These are from Wikimedia Commons, each under its own licence:",
+      "ภาพที่ระบุว่า NaN เป็นภาพของเธอ ใช้สัญญาอนุญาต CC BY 4.0 ภาพเหล่านี้มาจากวิกิมีเดียคอมมอนส์ แต่ละภาพใช้สัญญาอนุญาตของตัวเอง:")}</p>
 <table class="list">{rows}</table>
-<p>Tour, boat, rental and visa details are Laila Group's own, from slowboatthailandlaos.com and visaservicesthailand.com, read {C.READ}.</p></div>"""
-    page("credits/", "Credits", "Photo credits and sources.", body)
+<p>{t(f"Tour, boat, rental and visa details are Laila Group's own, from slowboatthailandlaos.com and visaservicesthailand.com, read {C.READ}.",
+      f"รายละเอียดทัวร์ เรือ รถเช่า และวีซ่า มาจากไลลากรุ๊ปเอง ที่ slowboatthailandlaos.com และ visaservicesthailand.com อ่านเมื่อ {TH.READ}")}</p></div>"""
+    page("credits/", t("Credits", "เครดิต"), t("Photo credits and sources.", "เครดิตภาพและแหล่งที่มา"), body)
 
 
 def machine():
     urls = ["", "lanterns/", "golden-triangle/", "see/", "sidequests/", "slow-boat/", "with-laila/", "roll/", "credits/"]
+    urls += ["th/" + u for u in urls]
     (DOCS / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
                                       + "".join(f"<url><loc>{SITE_URL}/{u}</loc></url>" for u in urls) + "</urlset>\n")
     (DOCS / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n")
@@ -668,6 +809,7 @@ def machine():
         f"# {TITLE}\n\n> Chiang Rai and the Golden Triangle — the headline sights, the sidequests, and the slow boat to "
         f"Luang Prabang — presented with Laila Group, Thai Viwat Alley, Chiang Rai.\n\n"
         + "".join(f"- [{t}]({SITE_URL}/{u})\n" for u, t in NAV) +
+        f"\nThai edition · ฉบับภาษาไทย: {SITE_URL}/th/\n" +
         f"\nOn the picture across the Mekong ({CANON}/img/own/across-mekong.jpg): {OWN['across-mekong']['alt']}\n"
         f"\nLaila Group: {C.SHOP}/ · WhatsApp {C.PHONE} · {C.MAIL}\nVisa Services Thailand: {C.VISA}\n")
     (DOCS / ".nojekyll").write_text("")
@@ -675,9 +817,14 @@ def machine():
 
 
 def main():
-    for p in ["lanterns", "golden-triangle", "see", "sidequests", "slow-boat", "with-laila", "roll", "credits"]:
+    global LANG
+    TH.check(OWN)
+    for p in ["lanterns", "golden-triangle", "see", "sidequests", "slow-boat", "with-laila", "roll", "credits", "th"]:
         shutil.rmtree(DOCS / p, ignore_errors=True)
-    home(); lanterns(); see(); golden(); sidequests(); slowboat(); laila(); roll(); credits(); machine()
+    for LANG in ("en", "th"):
+        home(); lanterns(); see(); golden(); sidequests(); slowboat(); laila(); roll(); credits()
+    LANG = "en"
+    machine()
     print("built", sum(1 for _ in DOCS.rglob("index.html")), "pages →", DOCS)
 
 
