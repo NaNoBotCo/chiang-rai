@@ -13,6 +13,8 @@ import fleet  # noqa: E402
 
 DOCS = ROOT / "docs"
 SITE_URL = os.environ.get("SITE_URL", "https://nanobotco.github.io/chiang-rai").rstrip("/")
+CANON = "https://motdang.net/chiang-rai"
+PAGES = "https://nanobotco.github.io/chiang-rai"
 TITLE = "Chiang Rai, Slowly"
 TITLE_TH = "แอ่วเชียงราย ค่อย ๆ ไปเน้อ"
 OWN = json.loads((ROOT / "data/own/own.json").read_text())
@@ -216,6 +218,30 @@ footer{margin-top:4rem;border-top:1px solid var(--ink);padding:1.6rem 16px 3rem;
 footer .in{max-width:66rem;margin:0 auto}
 footer a{color:var(--mute)}
 footer .support,footer .fleet{margin-top:.6rem}
+
+/* lantern sky: photo · scrim · canvas of rising lanterns (math) · type */
+.skyband{position:relative;isolation:isolate;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);width:100vw;
+ min-height:clamp(420px,92vh,900px);display:grid;place-items:center;text-align:center;color:#fff;overflow:hidden;
+ background:#07060a center/cover no-repeat;background-attachment:fixed;margin-block:2.6rem}
+.skyband::before{content:"";position:absolute;inset:0;z-index:-2;background:radial-gradient(90% 70% at 50% 35%,
+ rgba(20,10,30,.25),rgba(6,4,10,.86) 80%),linear-gradient(180deg,rgba(6,4,12,.7),rgba(6,4,12,.2) 40%,rgba(6,4,12,.9))}
+.skyband canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1;cursor:pointer}
+.skyband .in{padding:3rem 16px;pointer-events:none}
+.skyband .in a{pointer-events:auto}
+.skyband .kicker{font-family:var(--sans);font-size:.66rem;letter-spacing:.34em;text-transform:uppercase;color:#ffcf7a}
+.skyband h2{font-family:var(--display);font-weight:400;font-size:clamp(3rem,13vw,9rem);line-height:.9;margin:.4rem 0;
+ text-shadow:0 0 40px rgba(255,170,60,.45)}
+.skyband .thbig{font-family:var(--thai);font-size:clamp(1.3rem,4vw,2.2rem);color:#ffe3b0}
+.skyband .tap{font-family:var(--sans);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:#d9c7a6;margin-top:1rem}
+@media (pointer:coarse),(prefers-reduced-motion:reduce){.skyband{background-attachment:scroll}}
+.count{display:flex;justify-content:center;align-items:center;gap:1.4rem;margin:1.6rem 0 0;flex-wrap:wrap}
+.count b{display:block;font-family:var(--display);font-weight:400;font-size:clamp(4rem,16vw,8rem);line-height:.85;color:#ffcf7a}
+.count small{display:block;font-family:var(--sans);font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;color:#e9dcc4}
+.count svg{width:92px;height:92px;filter:drop-shadow(0 0 22px rgba(255,220,150,.5))}
+.bigshots{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:0;margin:0 calc(50% - 50vw);width:100vw}
+.bigshots a.shot .tx b{font-size:clamp(1.8rem,4vw,2.6rem)}
+.bigshots a.shot .tx i{font-size:.95rem}
+.bigshots a.shot .tx p{margin:.4rem 0 0;font-size:.95rem;max-width:26ch;color:#f3e7d2}
 """ + BANDS_CSS + r"""
 .band{--display:"Didot","Bodoni 72",Georgia,serif;--accent:#0e6b62;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
 .band h2{text-transform:none;font-weight:400;letter-spacing:0;line-height:1.02}
@@ -226,21 +252,22 @@ footer .support,footer .fleet{margin-top:.6rem}
 
 NAV = [("", "Chiang Rai"), ("golden-triangle/", "Golden Triangle"), ("see/", "The sights"),
        ("sidequests/", "Sidequests"), ("slow-boat/", "Slow boat"), ("with-laila/", "Laila Group"),
-       ("roll/", "Nan's roll")]
+       ("lanterns/", "Lanterns"), ("roll/", "Nan's roll")]
 
 
 def page(path: str, title: str, desc: str, body: str, card="card.jpg", ld=None):
     depth = path.count("/")
     pre = "../" * depth
     nav = "".join(f'<a href="{pre}{h}"{" aria-current=page" if h == path else ""}>{e(t)}</a>' for h, t in NAV)
-    url = SITE_URL + "/" + path
+    url = CANON + "/" + path
+    alt = (PAGES if SITE_URL == CANON else CANON) + "/" + path
     lds = "".join(f'<script type="application/ld+json">{json.dumps(x, ensure_ascii=False)}</script>' for x in (ld or []))
     full = title if title == TITLE else f"{title} · {TITLE}"
     body = body.replace("{PRE}", pre)
     doc = f"""<!doctype html><html lang="en" translate="no" class="notranslate"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="google" content="notranslate">
 <title>{e(full)}</title><meta name="description" content="{e(desc)}">
-<link rel="canonical" href="{url}"><meta name="theme-color" content="#0e6b62">
+<link rel="canonical" href="{url}"><link rel="alternate" href="{alt}"><meta name="theme-color" content="#0e6b62">
 <meta property="og:type" content="website"><meta property="og:title" content="{e(full)}">
 <meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{url}">
 <meta property="og:image" content="{SITE_URL}/{card}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
@@ -259,7 +286,7 @@ Photographs by NaN are CC BY 4.0; every other photograph carries its author and 
 {fleet.maker_html()}
 {fleet.row_html("chiang-rai")}
 </div></footer>
-<script>try{{document.querySelectorAll('video[data-tap]').forEach(v=>v.addEventListener('click',()=>v.paused?v.play():v.pause()))}}catch(e){{}}</script>
+<script>{LANTERN_JS}</script><script>try{{document.querySelectorAll('video[data-tap]').forEach(v=>v.addEventListener('click',()=>v.paused?v.play():v.pause()))}}catch(e){{}}</script>
 </body></html>"""
     out = DOCS / path / "index.html"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -273,6 +300,58 @@ ORG = {"@context": "https://schema.org", "@type": "TravelAgency", "name": "Laila
        "geo": {"@type": "GeoCoordinates", "latitude": C.OFFICE[0], "longitude": C.OFFICE[1]},
        "sameAs": [C.FB, C.IG, C.VISA]}
 
+
+
+LANTERN_JS = r"""
+(function(){
+ var night=new Date('%NIGHT%T19:00:00+07:00');
+ // mean full moon: 2000-01-21 04:40 UTC, synodic month 29.530588853 days
+ function phase(t){var d=(t-Date.UTC(2000,0,21,4,40))/864e5, s=29.530588853; return ((d/s)%1+1)%1}
+ function moonPath(f,r){ // f: 0 new → .5 full; returns the lit shape
+  var a=Math.cos(2*Math.PI*f)*r, sw=f<.5?1:0;
+  return 'M0,'+(-r)+' A'+r+','+r+' 0 0,'+sw+' 0,'+r+' A'+Math.abs(a)+','+r+' 0 0,'+((f<.25||f>.75)?sw:1-sw)+' 0,'+(-r);
+ }
+ document.querySelectorAll('[data-moon]').forEach(function(el){
+  var f=phase(Date.now()); el.querySelector('path').setAttribute('d',moonPath(f,46));
+ });
+ document.querySelectorAll('[data-count]').forEach(function(el){
+  var d=Math.ceil((night-Date.now())/864e5);
+  if(d<-2){el.hidden=true;return}
+  el.querySelector('b').textContent=d>0?d:'Tonight';
+  if(d<=0) el.querySelector('small').textContent='';
+ });
+ var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ document.querySelectorAll('canvas.sky').forEach(function(cv){
+  var cx=cv.getContext('2d'),W,H,dpr=Math.min(2,devicePixelRatio||1),L=[],N=+cv.dataset.n||90;
+  function size(){W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0)}
+  function mk(y,x){var z=Math.random();return{x:x==null?Math.random()*W:x,y:y==null?H+20+Math.random()*H:y,z:z,
+   s:4+z*16,v:.15+z*.55,ph:Math.random()*6.28,w:.3+Math.random()*.7,f:Math.random()*6.28}}
+  size();for(var i=0;i<N;i++)L.push(mk(Math.random()*H));
+  addEventListener('resize',size);
+  cv.addEventListener('pointerdown',function(e){var r=cv.getBoundingClientRect();
+   for(var i=0;i<3;i++){var l=mk(e.clientY-r.top,e.clientX-r.left+(i-1)*14);l.z=.9;l.s=18;l.v=.7;L.push(l)}});
+  function draw(t){
+   cx.clearRect(0,0,W,H);
+   L.sort(function(a,b){return a.z-b.z});
+   for(var i=0;i<L.length;i++){var l=L[i];
+    if(!reduce){l.y-=l.v;l.x+=Math.sin(t/1800*l.w+l.ph)*.25*l.z}
+    if(l.y<-40){if(L.length>N){L.splice(i,1);i--;continue}Object.assign(l,mk())}
+    var fl=.82+.18*Math.sin(t/140*l.w+l.f)*Math.sin(t/67+l.ph), s=l.s, a=(.35+.65*l.z)*Math.min(1,l.y/(H*.25));
+    var g=cx.createRadialGradient(l.x,l.y,0,l.x,l.y,s*2.6);
+    g.addColorStop(0,'rgba(255,196,92,'+(.55*a*fl)+')');g.addColorStop(1,'rgba(255,140,40,0)');
+    cx.fillStyle=g;cx.beginPath();cx.arc(l.x,l.y,s*2.6,0,6.283);cx.fill();
+    cx.fillStyle='rgba(255,'+(200+40*fl|0)+',140,'+a+')';
+    cx.beginPath();cx.moveTo(l.x-s*.45,l.y-s*.7);cx.lineTo(l.x+s*.45,l.y-s*.7);
+    cx.quadraticCurveTo(l.x+s*.55,l.y+s*.4,l.x+s*.3,l.y+s*.62);cx.lineTo(l.x-s*.3,l.y+s*.62);
+    cx.quadraticCurveTo(l.x-s*.55,l.y+s*.4,l.x-s*.45,l.y-s*.7);cx.fill();
+   }
+   if(!reduce&&cv._on)requestAnimationFrame(draw);
+  }
+  if('IntersectionObserver' in window&&!reduce){new IntersectionObserver(function(es){
+   var v=es[0].isIntersecting;if(v&&!cv._on){cv._on=true;requestAnimationFrame(draw)}else if(!v)cv._on=false}).observe(cv)}else draw(0);
+ });
+})();
+""".replace("%NIGHT%", C.LANTERN_NIGHT)
 
 # ---------------------------------------------------------------- pages
 def home():
@@ -302,6 +381,7 @@ def home():
 <figure class="polaroid"><img src="img/own/nan-golden-triangle-t.jpg" alt="Nan smiling at the Golden Triangle viewpoint" loading="lazy" width="405" height="720"><figcaption>Nan, at the Golden Triangle</figcaption></figure>
 </div>
 {band("c:luang-prabang-1", "Laila Group · the slow boat", "Two days down the Mekong to Luang Prabang", line="Picked up at your door before dawn, across the border by eight, on the river by ten. From ฿1,690.", th="ล่องเรือช้าไปหลวงพระบาง สองวันหนึ่งคืนเจ้า", href="slow-boat/", cta="The slow boat", cls="right")}
+{skyband("c:lantern-dark", "Yi Peng · 24 November 2026", "Lantern Night", "ยี่เป็ง เชียงราย", count=True, href="lanterns/", cta="Lantern Night")}
 <div class="wide"><h2 class="sec"><small>Sidequests · <span lang="th" class="th">แอ่วนอกเส้นทาง</span></small>The small wonders</h2>
 <div class="shots">{side}</div><p><a href="sidequests/">Every sidequest →</a></p></div>
 <div class="col">{note("desk")}
@@ -494,6 +574,48 @@ def laila():
     page("with-laila/", "Laila Group", "Laila Group, Chiang Rai: slow boats and trains to Laos, day trips, cars and scooters, visas, and designer consignment.", body, ld=[ORG])
 
 
+
+def skyband(ref, kicker, head, th, pre="{PRE}", count=False, href="", cta=""):
+    cnt = ""
+    if count:
+        cnt = ('<div class="count" data-count><svg viewBox="-50 -50 100 100" data-moon aria-hidden="true">'
+               '<circle r="46" fill="#2a2433"/><path fill="#fff4d6" d=""/></svg>'
+               '<div><b>–</b><small>nights to the Yi Peng moon · 24 Nov 2026</small></div></div>')
+    btn = f'<p><a class="btn" href="{"" if href.startswith("http") else pre}{e(href)}">{e(cta)}</a></p>' if href else ""
+    return (f'<section class="skyband" style="background-image:url({pre}{img(ref)})"><canvas class="sky" aria-hidden="true"></canvas>'
+            f'<div class="in"><span class="kicker">{e(kicker)}</span><h2>{e(head)}</h2><div class="thbig" lang="th">{e(th)}</div>'
+            f'{cnt}{btn}<p class="tap">Tap the sky</p></div><span class="cred" style="position:absolute;right:0;bottom:0;'
+            f'background:rgba(0,0,0,.6);padding:.2rem .5rem">{credit(ref)}</span></section>')
+
+
+def lanterns():
+    cards = "".join(
+        f'<figure class="card"><a class="shot" href="{e(osm(l["osm"]) if l.get("osm") else "#float")}" rel="noopener">'
+        f'<span class="bg" style="background-image:url(../{img(l["img"])})"></span><span class="scrim"></span>'
+        f'<span class="sp" style="padding-top:120%"></span><span class="tx"><b>{e(l["name"])}</b><i>{e(l["th"])}</i>'
+        f'<p>{e(l["line"])}</p></span></a></figure>' for l in C.LANTERNS)
+    body = f"""
+{skyband("c:lantern-sky", "Yi Peng · Loy Krathong", "Lantern Night", "ยี่เป็ง ลอยกระทง", count=True)}
+<div class="col" style="text-align:center">
+<p class="dek">One full moon. Lanterns up, krathongs down the river, and every wish with them.</p>
+<p class="dek-th th" lang="th">คืนเพ็ญเดือนยี่ โคมลอยขึ้นฟ้า กระทงลอยตามน้ำ ขอให้โชคดีมีสุขเจ้า</p>
+</div>
+<div class="bigshots">{cards}</div>
+<div class="col" id="float">
+{note("lantern", "../")}
+<h2 class="sec"><small>Three nights · <span lang="th" class="th">สามคืน</span></small>Around the full moon</h2>
+<p>Chiang Rai lights the Kok and Chiang Saen lights the Mekong over the nights around the full moon. The city posts its programme in the weeks before.</p>
+<p class="th" lang="th">งานในเมืองเข้าฟรีเจ้า กระทงใบตองราว 30–100 บาท</p>
+</div>
+{band("c:lantern-many", "The wish goes up", "A sky of lanterns", th="โคมลอยพาความทุกข์ลอยไปเจ้า", href="with-laila/", cta="Plan it with Laila", cls="tall")}
+<div class="wide"><div class="shots three">{shot("c:lantern-field", "Lanterns", "../golden-triangle/", "โคมลอย", 66, "../")}{shot("c:lantern-candles", "Candles", "../golden-triangle/", "ประทีป", 66, "../")}{shot("c:krathong-float", "Krathong", "../golden-triangle/", "กระทง", 66, "../")}</div></div>
+"""
+    page("lanterns/", "Lantern Night", "Yi Peng and Loy Krathong in Chiang Rai and Chiang Saen — the Kok River, four nations on the Mekong, and your own krathong. 24 November 2026.", body,
+         ld=[{"@context": "https://schema.org", "@type": "Event", "name": "Yi Peng & Loy Krathong, Chiang Rai", "startDate": C.LANTERN_NIGHT,
+              "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+              "location": {"@type": "Place", "name": "Kok River, Chiang Rai", "address": "Chiang Rai, Thailand"}}])
+
+
 def roll():
     figs = "".join(f'<figure><img src="../img/own/{k}-t.jpg" alt="{e(v["caption"])}" loading="lazy" width="{v["w"]}" height="{v["h"]}">'
                    f'<figcaption>{e(v["caption"])}</figcaption></figure>' for k, v in OWN.items())
@@ -518,7 +640,7 @@ def credits():
 
 
 def machine():
-    urls = ["", "golden-triangle/", "see/", "sidequests/", "slow-boat/", "with-laila/", "roll/", "credits/"]
+    urls = ["", "lanterns/", "golden-triangle/", "see/", "sidequests/", "slow-boat/", "with-laila/", "roll/", "credits/"]
     (DOCS / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
                                       + "".join(f"<url><loc>{SITE_URL}/{u}</loc></url>" for u in urls) + "</urlset>\n")
     (DOCS / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n")
@@ -532,9 +654,9 @@ def machine():
 
 
 def main():
-    for p in ["golden-triangle", "see", "sidequests", "slow-boat", "with-laila", "roll", "credits"]:
+    for p in ["lanterns", "golden-triangle", "see", "sidequests", "slow-boat", "with-laila", "roll", "credits"]:
         shutil.rmtree(DOCS / p, ignore_errors=True)
-    home(); see(); golden(); sidequests(); slowboat(); laila(); roll(); credits(); machine()
+    home(); lanterns(); see(); golden(); sidequests(); slowboat(); laila(); roll(); credits(); machine()
     print("built", sum(1 for _ in DOCS.rglob("index.html")), "pages →", DOCS)
 
 

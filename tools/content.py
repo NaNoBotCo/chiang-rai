@@ -274,3 +274,22 @@ NOTES = {
             line="Ask anything on WhatsApp, in English or Thai.",
             href=wa("Hello Laila Group! I found you on Chiang Rai, Slowly."), cta=PHONE, ext=True),
 }
+
+# ---------------------------------------------------------------- lanterns: Yi Peng & Loy Krathong
+# Night from the Thai calendar listings for 2026; the 2025 Chiang Rai events are from
+# chiangraicity.go.th (news 31989, 32000) and chiangrai.prd.go.th (content 236860).
+LANTERN_NIGHT = "2026-11-24"
+LANTERNS = [
+ dict(name="The Kok River", th="ริมน้ำกก · วัดฝั่งหมิ่น", img="c:kok-river-2", osm="Wat Fang Min",
+      line="A giant krathong on the river, then sa-pao boats of light drift downstream.",
+      th_line="กระทงใหญ่กลางน้ำกก แล้วล่องสะเปาเจ้า"),
+ dict(name="Chiang Saen", th="ลอยกระทง 4 ชาติ", img="c:lantern-candles", osm="Chiang Saen",
+      line="Four nations float together by the Golden Triangle: a thousand lamps on the Mekong.",
+      th_line="ไทย ลาว เมียนมา จีน ลอยกระทงร่วมกัน ประทีปล้านดวงเจ้า"),
+ dict(name="Your own", th="กระทงใบตอง", img="c:krathong-float",
+      line="Banana leaf, a candle, three incense sticks, a wish. Let it go.",
+      th_line="ใบตอง เทียน ธูปสามดอก อธิษฐาน แล้วปล่อยไปเน้อ"),
+]
+NOTES["lantern"] = dict(kicker="Laila Group", th="คืนยี่เป็ง",
+    line="A car and driver to Chiang Saen for lantern night, and back to town after.",
+    href=wa("Hello Laila Group! A car to Chiang Saen for Loy Krathong night, please."), cta="Ask Laila", ext=True)
