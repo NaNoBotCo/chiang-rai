@@ -1,0 +1,6 @@
+Text and NaN's photographs: CC BY 4.0 — credit "NaN, hongdam.net".
+Code: MIT.
+Wikimedia Commons photographs keep their own licences; author, licence and source page are
+listed in data/commons/credits.json and on docs/credits/.
+Laila Group, Visa Services Thailand and Laila's Designer Consignment names and offers are
+theirs, described from their own pages.
