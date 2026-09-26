@@ -260,7 +260,7 @@ def page(path: str, title: str, desc: str, body: str, card="card.jpg", ld=None):
     pre = "../" * depth
     nav = "".join(f'<a href="{pre}{h}"{" aria-current=page" if h == path else ""}>{e(t)}</a>' for h, t in NAV)
     url = CANON + "/" + path
-    alt = (PAGES if SITE_URL == CANON else CANON) + "/" + path
+    alt = PAGES + "/" + path
     lds = "".join(f'<script type="application/ld+json">{json.dumps(x, ensure_ascii=False)}</script>' for x in (ld or []))
     full = title if title == TITLE else f"{title} · {TITLE}"
     body = body.replace("{PRE}", pre)
