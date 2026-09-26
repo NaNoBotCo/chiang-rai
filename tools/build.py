@@ -500,7 +500,10 @@ def golden():
 """
     page("golden-triangle/", "The Golden Triangle", "Sop Ruak, the golden Buddha, the Hall of Opium, the glass walkway and Chiang Saen — the highlight of Chiang Rai.", body,
          ld=[{"@context": "https://schema.org", "@type": "TouristAttraction", "name": "Golden Triangle (Sop Ruak)",
-              "geo": {"@type": "GeoCoordinates", "latitude": 20.3526, "longitude": 100.0818}}])
+              "geo": {"@type": "GeoCoordinates", "latitude": 20.3526, "longitude": 100.0818}},
+             {"@context": "https://schema.org", "@type": "ImageObject", "contentUrl": CANON + "/img/own/across-mekong.jpg",
+              "name": "Across the Mekong from Sop Ruak", "creator": {"@type": "Person", "name": "NaN"},
+              "license": "https://creativecommons.org/licenses/by/4.0/", "description": OWN["across-mekong"]["alt"]}])
 
 
 def sidequests():
@@ -634,7 +637,7 @@ def lanterns():
 
 
 def roll():
-    figs = "".join(f'<figure><img src="../img/own/{k}-t.jpg" alt="{e(v["caption"])}" loading="lazy" width="{v["w"]}" height="{v["h"]}">'
+    figs = "".join(f'<figure><img src="../img/own/{k}-t.jpg" alt="{e(v.get("alt") or v["caption"])}" loading="lazy" width="{v["w"]}" height="{v["h"]}">'
                    f'<figcaption>{e(v["caption"])}</figcaption></figure>' for k, v in OWN.items())
     body = f"""
 <div class="col open"><div class="rubric">From the camera roll · <span lang="th" class="th">ภาพถ่าย</span></div>
@@ -665,6 +668,7 @@ def machine():
         f"# {TITLE}\n\n> Chiang Rai and the Golden Triangle — the headline sights, the sidequests, and the slow boat to "
         f"Luang Prabang — presented with Laila Group, Thai Viwat Alley, Chiang Rai.\n\n"
         + "".join(f"- [{t}]({SITE_URL}/{u})\n" for u, t in NAV) +
+        f"\nOn the picture across the Mekong ({CANON}/img/own/across-mekong.jpg): {OWN['across-mekong']['alt']}\n"
         f"\nLaila Group: {C.SHOP}/ · WhatsApp {C.PHONE} · {C.MAIL}\nVisa Services Thailand: {C.VISA}\n")
     (DOCS / ".nojekyll").write_text("")
     fleet.decorate(DOCS, "chiang-rai")
