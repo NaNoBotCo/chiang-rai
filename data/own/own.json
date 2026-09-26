@@ -1,6 +1,6 @@
 {
  "nan-hat": {
-  "caption": "Nan, first morning in Chiang Rai",
+  "caption": "NaN, first morning in Chiang Rai",
   "w": 1200,
   "h": 1600
  },
@@ -60,7 +60,7 @@
   "h": 1600
  },
  "nan-golden-triangle": {
-  "caption": "Nan at the Golden Triangle, late afternoon",
+  "caption": "NaN at the Golden Triangle, late afternoon",
   "w": 900,
   "h": 1600
  },
@@ -90,12 +90,12 @@
   "h": 1600
  },
  "nan-clock": {
-  "caption": "Nan at the clock tower",
+  "caption": "NaN at the clock tower",
   "w": 1200,
   "h": 1600
  },
  "nan-bush-hat": {
-  "caption": "Nan, ready for the day",
+  "caption": "NaN, ready for the day",
   "w": 1200,
   "h": 1600
  },
@@ -110,12 +110,12 @@
   "h": 1200
  },
  "nan-frangipani": {
-  "caption": "Nan with frangipani",
+  "caption": "NaN with frangipani",
   "w": 1200,
   "h": 1600
  },
  "nan-crown": {
-  "caption": "Nan in a flower crown",
+  "caption": "NaN in a flower crown",
   "w": 1200,
   "h": 1600
  },
@@ -153,5 +153,25 @@
   "caption": "The mouth of Tham Luang",
   "w": 1600,
   "h": 900
+ },
+ "baan-kan-garden": {
+  "caption": "The garden at Baan Kan",
+  "w": 1440,
+  "h": 1080
+ },
+ "baan-kan-porch": {
+  "caption": "A porch at Baan Kan",
+  "w": 1440,
+  "h": 1080
+ },
+ "baan-kan": {
+  "caption": "Baan Kan, Kaoloi Road",
+  "w": 1440,
+  "h": 1080
+ },
+ "baan-kan-terrace": {
+  "caption": "Morning on the terrace at Baan Kan",
+  "w": 1440,
+  "h": 1080
  }
 }

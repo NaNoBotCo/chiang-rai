@@ -205,7 +205,7 @@ table.list td small{display:block;color:var(--mute);font-size:.82rem}
  .btn:hover{transform:translateY(-2px) scale(1.03)}}
 .ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin:1.2rem 0}
 
-/* Nan's roll */
+/* NaN's roll */
 .roll{columns:3 12rem;column-gap:1rem;margin:1.4rem 0}
 .roll figure{break-inside:avoid;margin:0 0 1rem}
 .roll figcaption{font-size:.78rem;color:var(--mute);padding-top:.3rem}
@@ -252,7 +252,7 @@ footer .support,footer .fleet{margin-top:.6rem}
 
 NAV = [("", "Chiang Rai"), ("golden-triangle/", "Golden Triangle"), ("see/", "The sights"),
        ("sidequests/", "Sidequests"), ("slow-boat/", "Slow boat"), ("with-laila/", "Laila Group"),
-       ("lanterns/", "Lanterns"), ("roll/", "Nan's roll")]
+       ("lanterns/", "Lanterns"), ("roll/", "NaN's roll")]
 
 
 def page(path: str, title: str, desc: str, body: str, card="card.jpg", ld=None):
@@ -353,6 +353,17 @@ LANTERN_JS = r"""
 })();
 """.replace("%NIGHT%", C.LANTERN_NIGHT)
 
+
+def stay_block(pre="{PRE}"):
+    b = C.STAY
+    return (f'<section class="sight" id="stay"><figure class="card">'
+            f'{shot(b["img"], b["th"], b["book"], "", 125, pre, True)}<span class="cred">{credit(b["img"])}</span></figure>'
+            f'<div><span class="kick">Where to stay · ที่พัก</span><h3>{e(b["name"])}<span class="thn" lang="th">{e(b["th"])}</span></h3>'
+            f'<p>{e(b["line"])}</p><p class="th" lang="th">{e(b["th_line"])}</p>'
+            f'<p class="go"><a href="{e(b["book"])}" rel="noopener">Book direct</a>'
+            f'<a href="https://www.openstreetmap.org/?mlat={b["lat"]}&amp;mlon={b["lng"]}#map=18/{b["lat"]}/{b["lng"]}" rel="noopener">Map</a>'
+            f'<a href="tel:{b["phone"].replace(" ", "")}">{e(b["phone"])}</a></p></div></section>')
+
 # ---------------------------------------------------------------- pages
 def home():
     sights = "".join(
@@ -370,15 +381,15 @@ def home():
 {band("c:golden-triangle-3", "Sop Ruak", "The most beautiful afternoon in the north", th="สามเหลี่ยมทองคำ ยามแลง งามขนาดเจ้า", href="golden-triangle/", cta="The Golden Triangle", cls="tall")}
 <div class="col">
 {note("day")}
-<p class="lede">Chiang Rai is the northernmost city in Thailand and among its gentlest: a {e("sleepy little town full of lovely people")}, as Nan puts it, with a golden clock tower at the centre and the hills rising on every side. It is small enough to cross by scooter in ten minutes and generous enough to fill a week.</p>
+<p class="lede">Chiang Rai is the northernmost city in Thailand and among its gentlest: a {e("sleepy little town full of lovely people")}, as NaN puts it, with a golden clock tower at the centre and the hills rising on every side. It is small enough to cross by scooter in ten minutes and generous enough to fill a week.</p>
 <p>Within half an hour of the clock tower stand three of the most extraordinary buildings in Asia, each the life's work of a Chiang Rai artist: a temple in white, a temple in blue, and a house in black. An hour north, the Kok and the Ruak and the Mekong carry you to the Golden Triangle, where Thailand, Laos and Myanmar meet on one bend of the river. That was the highlight of our visit, and we went back several times.</p>
 <p class="th" lang="th">เชียงรายเป็นเมืองเล็ก ๆ ผู้คนใจดี แอ่วได้สบาย ๆ ทั้งวัน ม่วนใจ๋แต๊เจ้า</p>
 </div>
 <div class="wide"><h2 class="sec"><small>The sights · <span lang="th" class="th">ที่เที่ยว</span></small>Headliners</h2>
 <div class="shots">{sights}</div><p><a href="see/">All the sights →</a></p></div>
 <div class="col">{note("boat", "")}
-<blockquote class="pull"><p>“{e(C.QUOTE_GT)}”</p><cite>Nan, on the Golden Triangle</cite></blockquote>
-<figure class="polaroid"><img src="img/own/nan-golden-triangle-t.jpg" alt="Nan smiling at the Golden Triangle viewpoint" loading="lazy" width="405" height="720"><figcaption>Nan, at the Golden Triangle</figcaption></figure>
+<blockquote class="pull"><p>“{e(C.QUOTE_GT)}”</p><cite>NaN, on the Golden Triangle</cite></blockquote>
+<figure class="polaroid"><img src="img/own/nan-golden-triangle-t.jpg" alt="NaN smiling at the Golden Triangle viewpoint" loading="lazy" width="405" height="720"><figcaption>NaN, at the Golden Triangle</figcaption></figure>
 </div>
 {band("c:luang-prabang-1", "Laila Group · the slow boat", "Two days down the Mekong to Luang Prabang", line="Picked up at your door before dawn, across the border by eight, on the river by ten. From ฿1,690.", th="ล่องเรือช้าไปหลวงพระบาง สองวันหนึ่งคืนเจ้า", href="slow-boat/", cta="The slow boat", cls="right")}
 {skyband("c:lantern-dark", "Yi Peng · 24 November 2026", "Lantern Night", "ยี่เป็ง เชียงราย", count=True, href="lanterns/", cta="Lantern Night")}
@@ -390,6 +401,8 @@ def home():
 <p class="th" lang="th">ไลลากรุ๊ป อยู่ซอยไทยวิวัฒน์ กลางเมืองเชียงราย มีทั้งทัวร์ เรือช้าไปลาว รถเช่า มอเตอร์ไซค์ งานวีซ่า แล้วก็ร้านแบรนด์เนมฝากขาย ทักมาได้เน้อเจ้า</p>
 <div class="ctas"><a class="btn" href="with-laila/">Laila Group</a><a class="btn ghost" href="{e(C.wa("Hello Laila Group! I found you on Chiang Rai, Slowly."))}" rel="noopener">WhatsApp</a></div>
 {note("shop")}
+<h2 class="sec"><small>Stay · <span lang="th" class="th">ที่พัก</span></small>Where NaN stays</h2>
+{stay_block("")}
 </div>
 {band("c:clock-tower-2", "Ho Nalika · evenings", "Red, green, gold, and then the night bazaar", th="หอนาฬิกาเปลี่ยนสีทุกค่ำเจ้า", href="see/#clock-tower", cta="The clock tower", cls="short")}
 """
@@ -464,17 +477,21 @@ def golden():
 <p class="dek-th th" lang="th">น้ำรวกบรรจบน้ำโขง ไทย ลาว เมียนมา มาพบกันตรงนี้เจ้า</p></div>
 {band("c:golden-triangle-2", "Sop Ruak", "Where the Ruak meets the Mekong", th="ยามแลงแดดสีทองส่องน้ำโขง งามขนาดเน้อ", cls="tall")}
 <div class="col">
-<blockquote class="pull"><p>“{e(C.QUOTE_GT)}”</p><cite>Nan</cite></blockquote>
+<blockquote class="pull"><p>“{e(C.QUOTE_GT)}”</p><cite>NaN</cite></blockquote>
 <p class="lede">An hour and a little north of Chiang Rai, past Mae Chan and the turn for Chiang Saen, the road comes down to the water and stops. Across the Mekong is Laos. Up the smaller river, the Ruak, is Myanmar. The bend between them is the Golden Triangle, and in the late afternoon the name explains itself: the light goes gold, the river goes gold, and so does the great seated Buddha on the bank.</p>
 <p>Plan on the whole afternoon. Start at the Hall of Opium, walk the river road to the viewpoint, take a longtail out onto the Mekong, and finish on the glass walkway south of Chiang Saen with the sun going down behind the hills.</p>
-<figure class="polaroid"><img src="../img/own/nan-golden-triangle-t.jpg" alt="Nan at the Golden Triangle" loading="lazy" width="405" height="720"><figcaption>Late afternoon, the first of several visits</figcaption></figure>
+<figure class="polaroid"><img src="../img/own/nan-golden-triangle-t.jpg" alt="NaN at the Golden Triangle" loading="lazy" width="405" height="720"><figcaption>Late afternoon, the first of several visits</figcaption></figure>
 {"".join(blocks)}
+<blockquote class="pull"><p>“{e(C.QUOTE_OPIUM)}”</p><cite>NaN</cite></blockquote>
 <h2 class="sec"><small>Getting there · <span lang="th" class="th">ไปจะไดเจ้า</span></small>Three ways north</h2>
 <table class="list">
 <tr><td><b><a href="{trip("one-day-sightseeing-tour-in-chiang-rai")}" rel="noopener">Laila Group's one-day tour</a></b><small>Golden Triangle and the Hall of Opium, with the White Temple, Blue Temple and Black House on the same day. Guide and lunch included.</small></td><td class="p">฿1,200</td></tr>
 <tr><td><b><a href="../with-laila/#wheels">A car with a driver</a></b><small>Go at your own pace, stay for the sunset, come back several times.</small></td><td class="p">from ฿1,200 a day</td></tr>
 <tr><td><b><a href="../with-laila/#wheels">A scooter</a></b><small>About seventy kilometres each way on the main road.</small></td><td class="p">from ฿250 a day</td></tr>
 </table><p class="asof">Prices as listed by Laila Group, {C.READ}.</p>
+<h2 class="sec"><small>Stay · <span lang="th" class="th">ที่พัก</span></small>A bed for the night</h2>
+<p>The triangle has grand riverside resorts. NaN goes back to town.</p>
+{stay_block("../")}
 </div>
 <div class="wide"><div class="shots three">
 {"".join(f'<figure class="card">{shot(r, c, "../roll/", "", 150, "../")}</figure>' for r, c in [("own:skywalk-blossom", "Blossom over the glass"), ("own:skywalk-arch", "Toward the river"), ("own:across-mekong", "Across the Mekong"), ("own:opium-mural-2", "The farming year")])}
@@ -621,12 +638,12 @@ def roll():
                    f'<figcaption>{e(v["caption"])}</figcaption></figure>' for k, v in OWN.items())
     body = f"""
 <div class="col open"><div class="rubric">From the camera roll · <span lang="th" class="th">ภาพถ่าย</span></div>
-<h1>Nan's Roll</h1><p class="dek">February to June, Chiang Rai and the Golden Triangle, as they came off the phone.</p></div>
+<h1>NaN's Roll</h1><p class="dek">February to June, Chiang Rai and the Golden Triangle, as they came off the phone.</p></div>
 <div class="wide"><div class="roll">{figs}</div>
 <p class="cred">Photographs by NaN, CC BY 4.0.</p></div>
 <div class="col">{note("day", "../")}</div>
 """
-    page("roll/", "Nan's Roll", "Chiang Rai and the Golden Triangle from NaN's camera roll.", body)
+    page("roll/", "NaN's Roll", "Chiang Rai and the Golden Triangle from NaN's camera roll.", body)
 
 
 def credits():
