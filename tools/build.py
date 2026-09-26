@@ -360,7 +360,8 @@ Photographs by NaN are CC BY 4.0; every other photograph carries its author and 
 </div></footer>
 <script>{lantern_js()}</script><script>try{{document.querySelectorAll('video[data-tap]').forEach(v=>v.addEventListener('click',()=>v.paused?v.play():v.pause()))}}catch(e){{}}</script>
 </body></html>"""
-    doc = doc.replace(" ๆ", " \u2060ๆ")  # a word joiner keeps ไม้ยมก with the word it repeats
+    head, _, rest = doc.partition("<body>")
+    doc = head + "<body>" + rest.replace(" ๆ", " \u2060ๆ")  # a word joiner keeps ไม้ยมก with the word it repeats
     out = DOCS / tp / path / "index.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(doc, encoding="utf-8")
