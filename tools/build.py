@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import content as C  # noqa: E402
 import fleet  # noqa: E402
 
-DOCS = ROOT / "docs"
+DOCS = Path(os.environ["OUT"]) if os.environ.get("OUT") else ROOT / "docs"
 SITE_URL = os.environ.get("SITE_URL", "https://nanobotco.github.io/chiang-rai").rstrip("/")
 CANON = "https://motdang.net/chiang-rai"
 PAGES = "https://nanobotco.github.io/chiang-rai"
