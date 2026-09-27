@@ -325,7 +325,8 @@ def page(path: str, title: str, desc: str, body: str, card="card.jpg", ld=None):
     presented = (f'ร่วมนำเสนอโดย <a href="{pre}with-laila/">ไลลากรุ๊ป</a> เชียงราย · <span lang="en">Laila Group, Chiang Rai</span>' if th
                  else f'Presented with <a href="{pre}with-laila/">Laila Group</a>, Chiang Rai · <span lang="th" class="th">ไลลากรุ๊ป เชียงราย</span>')
     if th:
-        foot = f"""<p><b>{TITLE_TH}</b> · <span lang="en">Chiang Rai, Slowly</span> · ร่วมนำเสนอโดยไลลากรุ๊ป {e(C.ADDRESS_TH)} ·
+        foot = f"""<p><a href="https://motdang.net/cr/index.html">สารบัญเชียงราย · Chiang Rai directory</a> — มดแดง Mot Dang</p>
+<p><b>{TITLE_TH}</b> · <span lang="en">Chiang Rai, Slowly</span> · ร่วมนำเสนอโดยไลลากรุ๊ป {e(C.ADDRESS_TH)} ·
 <a href="{e(C.wa(TH.HELLO))}" rel="noopener">WhatsApp {e(C.PHONE)}</a> · <a href="mailto:{C.MAIL}">{e(C.MAIL)}</a></p>
 <p>ราคาเป็นของไลลากรุ๊ปเอง ตามที่ลงไว้บน <a href="{C.SHOP}/" rel="noopener">slowboatthailandlaos.com</a> เมื่อ {TH.READ}
 ภาพถ่ายของ NaN ใช้สัญญาอนุญาต CC BY 4.0 ภาพอื่นมีชื่อผู้ถ่ายและสัญญาอนุญาตกำกับไว้ข้างภาพ ข้อความ CC BY 4.0 โค้ด MIT
@@ -333,7 +334,8 @@ def page(path: str, title: str, desc: str, body: str, card="card.jpg", ld=None):
 {fleet.maker_html(lang="th")}
 {fleet.row_html("chiang-rai", label="เว็บอื่นจาก NaNoBotCo")}"""
     else:
-        foot = f"""<p><b>Chiang Rai, Slowly</b> · <span lang="th" class="th">{TITLE_TH}</span> · presented with Laila Group, {e(C.ADDRESS)} ·
+        foot = f"""<p><a href="https://motdang.net/cr/index.html">Chiang Rai directory · สารบัญเชียงราย</a> — มดแดง Mot Dang</p>
+<p><b>Chiang Rai, Slowly</b> · <span lang="th" class="th">{TITLE_TH}</span> · presented with Laila Group, {e(C.ADDRESS)} ·
 <a href="{C.WA}" rel="noopener">WhatsApp {e(C.PHONE)}</a> · <a href="mailto:{C.MAIL}">{e(C.MAIL)}</a></p>
 <p>Prices are Laila Group's own, as listed on <a href="{C.SHOP}/" rel="noopener">slowboatthailandlaos.com</a> on {C.READ}.
 Photographs by NaN are CC BY 4.0; every other photograph carries its author and licence beside it. Text CC BY 4.0, code MIT.
