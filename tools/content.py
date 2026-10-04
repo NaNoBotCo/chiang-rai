@@ -143,11 +143,10 @@ GT = [
            "and a gift shop of its own. Open early to late."),
  dict(name="Coffee and crafts, from the makers", th="กาแฟดอย · งานฝีมือชาวเขา", img="own:across-mekong",
       text="Along the river road and up at the viewpoints, hill-village families sell their own coffee "
-           "and their own weaving and embroidery, with the confluence below you. Buy from the "
-           "person who made it."),
+           "and their own weaving and embroidery, with the confluence below you."),
  dict(name="The glass walkway", th="สกายวอล์ค", img="own:skywalk",
       text="South of Chiang Saen a glass floor reaches out over the treetops toward the Mekong, "
-           "with blossom trees and an arch of flowers at the end. Bring a hat; the late sun is gold."),
+           "with blossom trees and an arch of flowers at the end. The late sun there is gold."),
  dict(name="Chiang Saen", th="เชียงแสน", img="c:chiang-saen-2", osm="Wat Pa Sak Chiang Saen",
       text="The old Lanna river city, with its brick walls and moat still standing among the trees. "
            "Wat Pa Sak, from 1295, sits in a teak grove on the western edge."),
@@ -159,8 +158,8 @@ GT = [
 # ---------------------------------------------------------------- sidequests
 SIDE = [
  dict(name="Vanali Vanilla Farm", th="ฟาร์มวานิลลา", img="own:vanilla", osm="Vanali Vanilla Farm",
-      text="Vanilla vines under shade cloth, on the edge of town. Ask to see the flowers and leave "
-           "with pods."),
+      text="Vanilla vines under shade cloth, on the edge of town. The farm shows its flowers "
+           "and sells its pods."),
  dict(name="The bus-station pillars", th="เสาภาพวาดสถานีขนส่ง", img="own:mural-friends",
       text="Every pillar at the city bus station by the night bazaar is painted as a window onto "
            "somewhere in the province: tea hills, the golden naga, two friends on a bus. Go at "
@@ -290,7 +289,7 @@ NOTES = {
               line="Designer pieces, consigned, next door to the visa office.",
               href="with-laila/#shop", cta="The shop"),
  "wa": dict(kicker="Laila Group", th="ทักมาเน้อ",
-            line="Ask anything on WhatsApp, in English or Thai.",
+            line="Ask anything on WhatsApp, in English or Thai.",  # stylecheck: allow — call to action
             href=wa("Hello Laila Group! I found you on Chiang Rai, Slowly."), cta=PHONE, ext=True),
 }
 

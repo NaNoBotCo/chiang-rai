@@ -650,8 +650,8 @@ def slowboat():
       "สองวันเต็ม แม่น้ำโขงพาคุณผ่านขุนเขาเขียวขจี ผ่านสันทราย เรือหาปลา และหมู่บ้านที่ลงมาถึงริมน้ำ คืนแรกพักที่ปากแบ่ง เมืองริมน้ำที่อยู่เพื่อต้อนรับเรือ บ่ายวันที่สอง ถึงหลวงพระบาง")}</p>
 <h2 class="sec"><small>{bi("The boats", "เรือ")}</small>{t("Choose your river", "เลือกเส้นทางของคุณ")}</h2>
 <table class="list">{rows}</table>
-<p class="asof">{t(f"Prices as listed by Laila Group, {C.READ}. Pack US dollars for the Lao visa on arrival (USD 40 on her listing) and your passport photo.",
-                  f"ราคาตามที่ไลลากรุ๊ปลงไว้ {TH.READ} ผู้ถือหนังสือเดินทางต่างชาติ เตรียมเงินดอลลาร์สหรัฐสำหรับวีซ่าลาวแบบ visa on arrival (USD 40 ตามที่ลงไว้) และรูปถ่ายติดพาสปอร์ต")}</p>
+<p class="asof">{t(f"Prices as listed by Laila Group, {C.READ}. The Lao visa on arrival takes US dollars (USD 40 on her listing) and a passport photo.",
+                  f"ราคาตามที่ไลลากรุ๊ปลงไว้ {TH.READ} ผู้ถือหนังสือเดินทางต่างชาติ วีซ่าลาวแบบ visa on arrival จ่ายเป็นดอลลาร์สหรัฐ (USD 40 ตามที่ลงไว้) ใช้รูปถ่ายติดพาสปอร์ตด้วย")}</p>
 <div class="ctas"><a class="btn" href="{trip("slow-boat-chiang-rai-to-luang-prabang")}" rel="noopener">{t("Book the slow boat", "จองเรือช้า")}</a><a class="btn ghost" href="{e(C.wa(t("Hello Laila Group! I would like the slow boat to Luang Prabang.", "สวัสดีเจ้า ไลลากรุ๊ป อยากจองเรือช้าไปหลวงพระบางเจ้า")))}" rel="noopener">{t("Ask on WhatsApp", "ถามทาง WhatsApp")}</a></div>
 </div>
 <div class="wide"><div class="shots three">
