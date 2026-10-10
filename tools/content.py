@@ -68,6 +68,9 @@ SIGHTS = [
       laila="one-day-sightseeing-tour-in-chiang-rai"),
  dict(id="clock-tower", name="The Golden Clock Tower", th="หอนาฬิกาเชียงราย", img="own:clock-gold",
       band="c:clock-tower-2", osm="Chiang Rai Clock Tower", video="v/clock-tower.mp4",
+      video_alt=("Eight seconds, no sound: the clock tower at night, lit red and gold on its roundabout, "
+                 "filmed from the road as a motorbike passes",
+                 "วิดีโอแปดวินาที ไม่มีเสียง: หอนาฬิกายามค่ำคืน เปิดไฟสีแดงและทองกลางวงเวียน ถ่ายจากถนนขณะมอเตอร์ไซค์ขับผ่าน"),
       kicker="Ho Nalika",
       text="Also Chalermchai's, and the heart of the old town. Every evening it runs through its "
            "colours to music: red, green, gold. The night bazaar is a short stroll away, and so "
