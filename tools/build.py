@@ -531,7 +531,9 @@ def sight_block(s, pre):
     vid = ""
     if s.get("video"):
         vid = (f'<video src="{A}{s["video"]}" poster="{img(s["img"], True)}" preload="none" muted loop playsinline '
-               f'data-tap controls width="270" height="480"></video><span class="cred">{t("Video", "วิดีโอ")}: NaN · CC BY 4.0</span>')
+               f'data-tap controls width="270" height="480"'
+               + (f' aria-label="{e(t(*s["video_alt"]))}"' if s.get("video_alt") else "")
+               + f'></video><span class="cred">{t("Video", "วิดีโอ")}: NaN · CC BY 4.0</span>')
     kick = f'<span class="kick">{e(s["kicker"])}</span>' if s.get("kicker") else ""
     tht = f'<p class="th" lang="th">{e(s["th_text"])}</p>' if s.get("th_text") else ""
     href = osm(s["osm"]) if s.get("osm") else "#" + s["id"]
