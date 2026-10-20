@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import content as C  # noqa: E402
 import content_th as TH  # noqa: E402
 import fleet  # noqa: E402
+import ogcards  # noqa: E402
 
 DOCS = Path(os.environ["OUT"]) if os.environ.get("OUT") else ROOT / "docs"
 SITE_URL = os.environ.get("SITE_URL", "https://nanobotco.github.io/chiang-rai").rstrip("/")
@@ -366,6 +367,7 @@ Photographs by NaN are CC BY 4.0; every other photograph carries its author and 
     doc = head + "<body>" + rest.replace(" ๆ", " \u2060ๆ")  # a word joiner keeps ไม้ยมก with the word it repeats
     out = DOCS / tp / path / "index.html"
     out.parent.mkdir(parents=True, exist_ok=True)
+    doc = ogcards.apply(doc, out.relative_to(DOCS).as_posix(), SITE_URL)
     out.write_text(doc, encoding="utf-8")
 
 
@@ -826,6 +828,7 @@ def main():
     TH.check(OWN)
     for p in ["lanterns", "golden-triangle", "see", "sidequests", "slow-boat", "with-laila", "roll", "credits", "th"]:
         shutil.rmtree(DOCS / p, ignore_errors=True)
+    ogcards.copy(ROOT, DOCS)
     for LANG in ("en", "th"):
         home(); lanterns(); see(); golden(); sidequests(); slowboat(); laila(); roll(); credits()
     LANG = "en"

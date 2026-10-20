@@ -1,0 +1,38 @@
+{
+ "credits/": {
+  "alt": "Card: Credits, Chiang Rai, Slowly",
+  "image": "og/credits.jpg"
+ },
+ "golden-triangle/": {
+  "alt": "Card: The Golden Triangle, Chiang Rai, Slowly",
+  "image": "og/golden-triangle.jpg"
+ },
+ "lanterns/": {
+  "alt": "Card: Lantern Night, Chiang Rai, Slowly",
+  "image": "og/lanterns.jpg"
+ },
+ "roll/": {
+  "alt": "Card: NaN's Roll, Chiang Rai, Slowly",
+  "image": "og/roll.jpg"
+ },
+ "see/": {
+  "alt": "Card: The Headliners, Chiang Rai, Slowly",
+  "image": "og/see.jpg"
+ },
+ "sidequests/": {
+  "alt": "Card: Sidequests, Chiang Rai, Slowly",
+  "image": "og/sidequests.jpg"
+ },
+ "slow-boat/": {
+  "alt": "Card: The Slow Boat, Chiang Rai, Slowly",
+  "image": "og/slow-boat.jpg"
+ },
+ "th/": {
+  "alt": "Card: แอ่วเชียงราย ค่อย ๆ ไปเน้อ, Chiang Rai, Slowly",
+  "image": "og/th.jpg"
+ },
+ "with-laila/": {
+  "alt": "Card: Laila Group, Chiang Rai, Slowly",
+  "image": "og/with-laila.jpg"
+ }
+}
