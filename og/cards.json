@@ -1,4 +1,8 @@
 {
+ "./": {
+  "alt": "Card: Chiang Rai, Slowly, the Mekong at the Golden Triangle with a polaroid of NaN",
+  "image": "card.jpg"
+ },
  "credits/": {
   "alt": "Card: Credits, Chiang Rai, Slowly",
   "image": "og/credits.jpg"
